@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use crate::{instruction::Instruction, parser::Code};
 
 const DEFAULT_MEMORY_SIZE: usize = 32;
@@ -10,6 +12,7 @@ pub struct Interpreter {
     pub memory_pointer: usize,
 
     ended: bool,
+    end_of_stream: bool,
 }
 
 fn get_next_prime(n: usize) -> usize {
@@ -52,6 +55,7 @@ impl Interpreter {
             memory: vec![0; DEFAULT_MEMORY_SIZE],
             memory_pointer: 0,
             ended: false,
+            end_of_stream: false,
         }
     }
 
@@ -136,9 +140,18 @@ impl Interpreter {
                     self.instruction_pointer += 1;
                 }
                 Instruction::IN => {
-                    let mut input = String::new();
-                    std::io::stdin().read_line(&mut input).unwrap();
-                    self.memory[self.memory_pointer] = input.trim().parse().unwrap();
+                    if !self.end_of_stream {
+                        let mut input = vec![0; 1];
+                        match std::io::stdin().read_exact(&mut input) {
+                            Ok(_) => {
+                                self.memory[self.memory_pointer] = input[0];
+                            }
+                            Err(_) => {
+                                self.end_of_stream = true;
+                            }
+                        }
+                    }
+
                     self.instruction_pointer += 1;
                 }
                 Instruction::RND => {
