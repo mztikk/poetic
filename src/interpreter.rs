@@ -11,6 +11,9 @@ pub struct Interpreter {
     pub memory: Vec<u8>,
     pub memory_pointer: usize,
 
+    pub input: Box<dyn Fn() -> Option<u8>>,
+    pub output: Box<dyn Fn(String)>,
+
     ended: bool,
     end_of_stream: bool,
 }
@@ -47,13 +50,44 @@ fn is_prime(x: u64) -> bool {
     true
 }
 
+pub fn default_input_stream() -> Option<u8> {
+    let mut input = vec![0; 1];
+    match std::io::stdin().read_exact(&mut input) {
+        Ok(_) => Some(input[0]),
+        Err(_) => None,
+    }
+}
+
+pub fn default_output_stream(output: String) {
+    print!("{}", output);
+}
+
 impl Interpreter {
-    pub fn new(instructions: Code) -> Interpreter {
-        Interpreter {
+    pub fn new(instructions: Code) -> Self {
+        Self {
             instructions,
             instruction_pointer: 0,
             memory: vec![0; DEFAULT_MEMORY_SIZE],
             memory_pointer: 0,
+            input: Box::new(default_input_stream),
+            output: Box::new(default_output_stream),
+            ended: false,
+            end_of_stream: false,
+        }
+    }
+
+    pub fn new_io(
+        instructions: Code,
+        input: Box<dyn Fn() -> Option<u8>>,
+        output: Box<dyn Fn(String)>,
+    ) -> Self {
+        Self {
+            instructions,
+            instruction_pointer: 0,
+            memory: vec![0; DEFAULT_MEMORY_SIZE],
+            memory_pointer: 0,
+            input,
+            output,
             ended: false,
             end_of_stream: false,
         }
@@ -136,17 +170,25 @@ impl Interpreter {
                     self.instruction_pointer += 1;
                 }
                 Instruction::OUT => {
-                    print!("{}", self.memory[self.memory_pointer] as char);
+                    (self.output)(format!("{}", self.memory[self.memory_pointer] as char));
                     self.instruction_pointer += 1;
                 }
                 Instruction::IN => {
                     if !self.end_of_stream {
-                        let mut input = vec![0; 1];
-                        match std::io::stdin().read_exact(&mut input) {
-                            Ok(_) => {
-                                self.memory[self.memory_pointer] = input[0];
+                        // let mut input = vec![0; 1];
+                        // match std::io::stdin().read_exact(&mut input) {
+                        //     Ok(_) => {
+                        //         self.memory[self.memory_pointer] = input[0];
+                        //     }
+                        //     Err(_) => {
+                        //         self.end_of_stream = true;
+                        //     }
+                        // }
+                        match (self.input)() {
+                            Some(input) => {
+                                self.memory[self.memory_pointer] = input;
                             }
-                            Err(_) => {
+                            None => {
                                 self.end_of_stream = true;
                             }
                         }
