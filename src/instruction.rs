@@ -1,5 +1,5 @@
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, std::cmp::PartialEq, std::cmp::Eq)]
 pub enum Instruction {
     END,
     IF,
