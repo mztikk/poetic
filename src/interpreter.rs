@@ -160,6 +160,7 @@ impl Interpreter {
                 }
                 Instruction::FWD(n) => {
                     self.memory_pointer += if n == 0 { 10 } else { n } as usize;
+                    self.memory_pointer &= self.memory.len() - 1;
                     if self.memory_pointer > self.memory.len() - 1 {
                         self.memory.resize(get_next_prime(self.memory_pointer), 0);
                     }
@@ -167,6 +168,7 @@ impl Interpreter {
                 }
                 Instruction::BAK(n) => {
                     self.memory_pointer -= if n == 0 { 10 } else { n } as usize;
+                    self.memory_pointer &= self.memory.len() - 1;
                     self.instruction_pointer += 1;
                 }
                 Instruction::OUT => {
@@ -174,24 +176,8 @@ impl Interpreter {
                     self.instruction_pointer += 1;
                 }
                 Instruction::IN => {
-                    if !self.end_of_stream {
-                        // let mut input = vec![0; 1];
-                        // match std::io::stdin().read_exact(&mut input) {
-                        //     Ok(_) => {
-                        //         self.memory[self.memory_pointer] = input[0];
-                        //     }
-                        //     Err(_) => {
-                        //         self.end_of_stream = true;
-                        //     }
-                        // }
-                        match (self.input)() {
-                            Some(input) => {
-                                self.memory[self.memory_pointer] = input;
-                            }
-                            None => {
-                                self.end_of_stream = true;
-                            }
-                        }
+                    if let Some(input) = (self.input)() {
+                        self.memory[self.memory_pointer] = input;
                     }
 
                     self.instruction_pointer += 1;
