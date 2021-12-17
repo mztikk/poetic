@@ -106,7 +106,7 @@ mod test {
     #[test]
     fn test_intermediate_10_as_0() {
         // parse 10 as 0
-        let intermediate = Parser::parse_intermediate("aaaaaaaaaa");
+        let intermediate = Parser::parse_intermediate(&str::repeat("a", 10));
         assert_eq!(intermediate[0], 0);
     }
 
@@ -150,7 +150,7 @@ mod test {
     #[test]
     fn test_intermediate_28_as_2_8() {
         // parse 10 as 0
-        let intermediate = Parser::parse_intermediate("aaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let intermediate = Parser::parse_intermediate(&str::repeat("a", 28));
         assert_eq!(intermediate[0], 2);
         assert_eq!(intermediate[1], 8);
     }
