@@ -110,7 +110,7 @@ mod test {
 
     #[test]
     fn test_intermediate_11_as_1_1() {
-        // parse 10 as 0
+        // parse 11 as 1 and 1
         let intermediate = Parser::parse_intermediate("aaaaaaaaaaa");
         assert_eq!(intermediate[0], 1);
         assert_eq!(intermediate[1], 1);
