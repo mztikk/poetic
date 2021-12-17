@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::VecDeque};
 
 use crate::instruction::Instruction;
 
@@ -29,12 +29,22 @@ impl Parser {
                 Ordering::Less => result.push(d as u8),
                 Ordering::Equal => result.push(0),
                 Ordering::Greater => {
-                    d.to_string()
-                        .chars()
-                        .map(|c| c.to_string().parse::<u8>().unwrap())
-                        .for_each(|d| {
-                            result.push(d);
-                        });
+                    // d.to_string()
+                    //     .chars()
+                    //     .map(|c| c.to_string().parse::<u8>().unwrap())
+                    //     .for_each(|d| {
+                    //         result.push(d);
+                    //     });
+                    let mut digits = VecDeque::new();
+                    let mut d = d as u8;
+                    while d > 0 {
+                        digits.push_front(d % 10);
+                        d /= 10;
+                    }
+
+                    while !digits.is_empty() {
+                        result.push(digits.pop_front().unwrap());
+                    }
                 }
             });
 
