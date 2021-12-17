@@ -29,22 +29,14 @@ impl Parser {
                 Ordering::Less => result.push(d as u8),
                 Ordering::Equal => result.push(0),
                 Ordering::Greater => {
-                    // d.to_string()
-                    //     .chars()
-                    //     .map(|c| c.to_string().parse::<u8>().unwrap())
-                    //     .for_each(|d| {
-                    //         result.push(d);
-                    //     });
                     let mut digits = VecDeque::new();
-                    let mut d = d as u8;
-                    while d > 0 {
-                        digits.push_front(d % 10);
-                        d /= 10;
+                    let mut n = d;
+                    while n > 0 {
+                        digits.push_front((n % 10) as u8);
+                        n /= 10;
                     }
 
-                    while !digits.is_empty() {
-                        result.push(digits.pop_front().unwrap());
-                    }
+                    result.append(&mut digits.into());
                 }
             });
 
@@ -121,9 +113,20 @@ mod test {
     #[test]
     fn test_intermediate_11_as_1_1() {
         // parse 11 as 1 and 1
-        let intermediate = Parser::parse_intermediate("aaaaaaaaaaa");
+        let intermediate = Parser::parse_intermediate(&str::repeat("a", 11));
         assert_eq!(intermediate[0], 1);
         assert_eq!(intermediate[1], 1);
+    }
+
+    #[test]
+    fn test_intermediate_12345_as_1_2_3_4_5() {
+        // parse 12345 as 1,2,3,4,5
+        let intermediate = Parser::parse_intermediate(&str::repeat("a", 12345));
+        assert_eq!(intermediate[0], 1);
+        assert_eq!(intermediate[1], 2);
+        assert_eq!(intermediate[2], 3);
+        assert_eq!(intermediate[3], 4);
+        assert_eq!(intermediate[4], 5);
     }
 
     #[test]
