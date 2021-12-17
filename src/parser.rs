@@ -54,10 +54,26 @@ impl Parser {
                 0 => result.push(Instruction::END),
                 1 => result.push(Instruction::IF),
                 2 => result.push(Instruction::EIF),
-                3 => result.push(Instruction::INC(iter.next().unwrap().to_owned())),
-                4 => result.push(Instruction::DEC(iter.next().unwrap().to_owned())),
-                5 => result.push(Instruction::FWD(iter.next().unwrap().to_owned())),
-                6 => result.push(Instruction::BAK(iter.next().unwrap().to_owned())),
+                3 => result.push(Instruction::INC(
+                    iter.next()
+                        .expect("INC Instruction needs an argument")
+                        .to_owned(),
+                )),
+                4 => result.push(Instruction::DEC(
+                    iter.next()
+                        .expect("DEC Instruction needs an argument")
+                        .to_owned(),
+                )),
+                5 => result.push(Instruction::FWD(
+                    iter.next()
+                        .expect("FWD Instruction needs an argument")
+                        .to_owned(),
+                )),
+                6 => result.push(Instruction::BAK(
+                    iter.next()
+                        .expect("BAK Instruction needs an argument")
+                        .to_owned(),
+                )),
                 7 => result.push(Instruction::OUT),
                 8 => result.push(Instruction::IN),
                 9 => result.push(Instruction::RND),
@@ -148,10 +164,28 @@ mod test {
     }
 
     #[test]
+    #[should_panic(expected = "INC Instruction needs an argument")]
+    fn test_instruction_inc_needs_arg() {
+        // hide panic output
+        std::panic::set_hook(Box::new(|_| {}));
+        let intermediate: Intermediate = vec![3];
+        let _instructions = Parser::parse_instructions(&intermediate);
+    }
+
+    #[test]
     fn test_instruction_dec() {
         let intermediate: Intermediate = vec![4, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::DEC(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "DEC Instruction needs an argument")]
+    fn test_instruction_dec_needs_arg() {
+        // hide panic output
+        std::panic::set_hook(Box::new(|_| {}));
+        let intermediate: Intermediate = vec![4];
+        let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
@@ -162,10 +196,28 @@ mod test {
     }
 
     #[test]
+    #[should_panic(expected = "FWD Instruction needs an argument")]
+    fn test_instruction_fwd_needs_arg() {
+        // hide panic output
+        std::panic::set_hook(Box::new(|_| {}));
+        let intermediate: Intermediate = vec![5];
+        let _instructions = Parser::parse_instructions(&intermediate);
+    }
+
+    #[test]
     fn test_instruction_bak() {
         let intermediate: Intermediate = vec![6, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::BAK(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "BAK Instruction needs an argument")]
+    fn test_instruction_bak_needs_arg() {
+        // hide panic output
+        std::panic::set_hook(Box::new(|_| {}));
+        let intermediate: Intermediate = vec![6];
+        let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
