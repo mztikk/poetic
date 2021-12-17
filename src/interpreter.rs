@@ -114,10 +114,10 @@ impl Interpreter {
             }
             Instruction::FWD(n) => {
                 self.memory_pointer += if n == 0 { 10 } else { n } as usize;
-                self.memory_pointer &= self.memory.len() - 1;
                 if self.memory_pointer > self.memory.len() - 1 {
                     self.memory.resize(self.memory.len() * 2, 0);
                 }
+                self.memory_pointer &= self.memory.len() - 1;
                 self.instruction_pointer += 1;
             }
             Instruction::BAK(n) => {
