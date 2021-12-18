@@ -11,8 +11,8 @@ pub struct Interpreter {
     pub memory: Vec<u8>,
     pub memory_pointer: usize,
 
-    pub input: Box<dyn Fn() -> Option<u8>>,
-    pub output: Box<dyn Fn(String)>,
+    pub input: Box<dyn FnMut() -> Option<u8>>,
+    pub output: Box<dyn FnMut(String)>,
 
     ended: bool,
 }
@@ -44,8 +44,8 @@ impl Interpreter {
 
     pub fn new_io(
         instructions: Code,
-        input: Box<dyn Fn() -> Option<u8>>,
-        output: Box<dyn Fn(String)>,
+        input: Box<dyn FnMut() -> Option<u8>>,
+        output: Box<dyn FnMut(String)>,
     ) -> Self {
         Self {
             instructions,
@@ -159,6 +159,8 @@ impl Interpreter {
 mod test {
     use crate::{instruction::Instruction, interpreter::default_input_stream};
 
+    use super::default_output_stream;
+
     #[test]
     fn test_interpret_inc() {
         for i in 1..10 {
@@ -265,5 +267,35 @@ mod test {
             }),
         );
         interpreter.run();
+    }
+
+    #[test]
+    fn test_interpret_in() {
+        let mut input = vec!['A' as u8, 'B' as u8, 'C' as u8];
+        let get_input = move || -> Option<u8> {
+            if input.is_empty() {
+                None
+            } else {
+                Some(input.remove(0))
+            }
+        };
+
+        let instructions = vec![
+            Instruction::IN,
+            Instruction::FWD(1),
+            Instruction::IN,
+            Instruction::FWD(1),
+            Instruction::IN,
+        ];
+        let mut interpreter = super::Interpreter::new_io(
+            instructions,
+            Box::new(get_input),
+            Box::new(default_output_stream),
+        );
+        interpreter.run();
+
+        assert_eq!(interpreter.memory[0], 'A' as u8);
+        assert_eq!(interpreter.memory[1], 'B' as u8);
+        assert_eq!(interpreter.memory[2], 'C' as u8);
     }
 }
