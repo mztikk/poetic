@@ -157,7 +157,7 @@ impl Interpreter {
 
 #[cfg(test)]
 mod test {
-    use crate::instruction::Instruction;
+    use crate::{instruction::Instruction, interpreter::default_input_stream};
 
     #[test]
     fn test_interpret_inc() {
@@ -222,5 +222,48 @@ mod test {
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
         assert_eq!(interpreter.memory_pointer, interpreter.memory.len() - 1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_interpret_out_is_called() {
+        std::panic::set_hook(Box::new(|_| {}));
+
+        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let mut interpreter = super::Interpreter::new_io(
+            instructions,
+            Box::new(default_input_stream),
+            Box::new(|s| {
+                panic!("{}", s);
+            }),
+        );
+        interpreter.run();
+    }
+
+    #[test]
+    fn test_interpret_out() {
+        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let mut interpreter = super::Interpreter::new_io(
+            instructions,
+            Box::new(default_input_stream),
+            Box::new(|s| {
+                assert_eq!(s, "H");
+            }),
+        );
+        interpreter.run();
+    }
+
+    #[test]
+    fn test_interpret_out_different() {
+        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let mut interpreter = super::Interpreter::new_io(
+            instructions,
+            Box::new(default_input_stream),
+            Box::new(|s| {
+                assert_eq!(s, "H");
+                assert_ne!(s, "A");
+            }),
+        );
+        interpreter.run();
     }
 }
