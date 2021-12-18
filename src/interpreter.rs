@@ -1,11 +1,11 @@
 use std::io::Read;
 
-use crate::{instruction::Instruction, parser::Code};
+use crate::instruction::Instruction;
 
 const DEFAULT_MEMORY_SIZE: usize = 32;
 
 pub struct Interpreter {
-    pub instructions: Code,
+    pub instructions: Vec<Instruction>,
     pub instruction_pointer: usize,
 
     pub memory: Vec<u8>,
@@ -30,7 +30,7 @@ pub fn default_output_stream(output: String) {
 }
 
 impl Interpreter {
-    pub fn new(instructions: Code) -> Self {
+    pub fn new(instructions: Vec<Instruction>) -> Self {
         Self {
             instructions,
             instruction_pointer: 0,
@@ -43,7 +43,7 @@ impl Interpreter {
     }
 
     pub fn new_io(
-        instructions: Code,
+        instructions: Vec<Instruction>,
         input: Box<dyn FnMut() -> Option<u8>>,
         output: Box<dyn FnMut(String)>,
     ) -> Self {

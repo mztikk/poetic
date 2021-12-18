@@ -2,14 +2,11 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use crate::instruction::Instruction;
 
-pub type Intermediate = Vec<u8>;
-pub type Code = Vec<Instruction>;
-
 pub struct Parser {}
 
 impl Parser {
-    pub fn parse_intermediate(source: &str) -> Intermediate {
-        let mut result = Intermediate::new();
+    pub fn parse_intermediate(source: &str) -> Vec<u8> {
+        let mut result = Vec::new();
 
         source
             .chars()
@@ -53,10 +50,10 @@ impl Parser {
             return 10;
         }
 
-        return argument;
+        argument
     }
 
-    pub fn parse_instructions(intermediate: &Intermediate) -> Code {
+    pub fn parse_instructions(intermediate: &[u8]) -> Vec<Instruction> {
         let mut result = Vec::new();
         let mut iter = intermediate.iter();
         while let Some(arg) = iter.next() {
@@ -100,7 +97,7 @@ impl Parser {
 mod test {
     use crate::instruction::Instruction;
 
-    use super::{Intermediate, Parser};
+    use super::Parser;
 
     #[test]
     fn test_intermediate_len() {
@@ -173,21 +170,21 @@ mod test {
 
     #[test]
     fn test_instruction_if() {
-        let intermediate: Intermediate = vec![1];
+        let intermediate = vec![1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::IF);
     }
 
     #[test]
     fn test_instruction_eif() {
-        let intermediate: Intermediate = vec![2];
+        let intermediate = vec![2];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::EIF);
     }
 
     #[test]
     fn test_instruction_inc() {
-        let intermediate: Intermediate = vec![3, 1];
+        let intermediate = vec![3, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::INC(1));
     }
@@ -197,13 +194,13 @@ mod test {
     fn test_instruction_inc_needs_arg() {
         // hide panic output
         std::panic::set_hook(Box::new(|_| {}));
-        let intermediate: Intermediate = vec![3];
+        let intermediate = vec![3];
         let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
     fn test_instruction_dec() {
-        let intermediate: Intermediate = vec![4, 1];
+        let intermediate = vec![4, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::DEC(1));
     }
@@ -213,13 +210,13 @@ mod test {
     fn test_instruction_dec_needs_arg() {
         // hide panic output
         std::panic::set_hook(Box::new(|_| {}));
-        let intermediate: Intermediate = vec![4];
+        let intermediate = vec![4];
         let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
     fn test_instruction_fwd() {
-        let intermediate: Intermediate = vec![5, 1];
+        let intermediate = vec![5, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::FWD(1));
     }
@@ -229,13 +226,13 @@ mod test {
     fn test_instruction_fwd_needs_arg() {
         // hide panic output
         std::panic::set_hook(Box::new(|_| {}));
-        let intermediate: Intermediate = vec![5];
+        let intermediate = vec![5];
         let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
     fn test_instruction_bak() {
-        let intermediate: Intermediate = vec![6, 1];
+        let intermediate = vec![6, 1];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::BAK(1));
     }
@@ -245,41 +242,41 @@ mod test {
     fn test_instruction_bak_needs_arg() {
         // hide panic output
         std::panic::set_hook(Box::new(|_| {}));
-        let intermediate: Intermediate = vec![6];
+        let intermediate = vec![6];
         let _instructions = Parser::parse_instructions(&intermediate);
     }
 
     #[test]
     fn test_instruction_out() {
-        let intermediate: Intermediate = vec![7];
+        let intermediate = vec![7];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::OUT);
     }
 
     #[test]
     fn test_instruction_in() {
-        let intermediate: Intermediate = vec![8];
+        let intermediate = vec![8];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::IN);
     }
 
     #[test]
     fn test_instruction_rnd() {
-        let intermediate: Intermediate = vec![9];
+        let intermediate = vec![9];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::RND);
     }
 
     #[test]
     fn test_instruction_end10() {
-        let intermediate: Intermediate = vec![10];
+        let intermediate = vec![10];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::END);
     }
 
     #[test]
     fn test_instruction_end0() {
-        let intermediate: Intermediate = vec![0];
+        let intermediate = vec![0];
         let instructions = Parser::parse_instructions(&intermediate);
         assert_eq!(instructions[0], Instruction::END);
     }
