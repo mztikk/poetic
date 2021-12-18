@@ -48,6 +48,14 @@ impl Parser {
         result
     }
 
+    fn argument_conversion(argument: u8) -> u8 {
+        if argument == 0 {
+            return 10;
+        }
+
+        return argument;
+    }
+
     pub fn parse_instructions(intermediate: &Intermediate) -> Code {
         let mut result = Vec::new();
         let mut iter = intermediate.iter();
@@ -56,26 +64,26 @@ impl Parser {
                 0 => result.push(Instruction::END),
                 1 => result.push(Instruction::IF),
                 2 => result.push(Instruction::EIF),
-                3 => result.push(Instruction::INC(
+                3 => result.push(Instruction::INC(Parser::argument_conversion(
                     iter.next()
                         .expect("INC Instruction needs an argument")
                         .to_owned(),
-                )),
-                4 => result.push(Instruction::DEC(
+                ))),
+                4 => result.push(Instruction::DEC(Parser::argument_conversion(
                     iter.next()
                         .expect("DEC Instruction needs an argument")
                         .to_owned(),
-                )),
-                5 => result.push(Instruction::FWD(
+                ))),
+                5 => result.push(Instruction::FWD(Parser::argument_conversion(
                     iter.next()
                         .expect("FWD Instruction needs an argument")
                         .to_owned(),
-                )),
-                6 => result.push(Instruction::BAK(
+                ))),
+                6 => result.push(Instruction::BAK(Parser::argument_conversion(
                     iter.next()
                         .expect("BAK Instruction needs an argument")
                         .to_owned(),
-                )),
+                ))),
                 7 => result.push(Instruction::OUT),
                 8 => result.push(Instruction::IN),
                 9 => result.push(Instruction::RND),
@@ -153,6 +161,14 @@ mod test {
         let intermediate = Parser::parse_intermediate(&str::repeat("a", 28));
         assert_eq!(intermediate[0], 2);
         assert_eq!(intermediate[1], 8);
+    }
+
+    #[test]
+    fn test_parse_argument_0_as_10() {
+        // len 30 -> 3,0 -> 3 = INC with arg 0 should be parsed as 10
+        let intermediate = Parser::parse_intermediate(&str::repeat("a", 30));
+        let instructions = Parser::parse_instructions(&intermediate);
+        assert_eq!(instructions[0], Instruction::INC(10));
     }
 
     #[test]

@@ -105,23 +105,23 @@ impl Interpreter {
                 }
             }
             Instruction::INC(n) => {
-                self.memory[self.memory_pointer] += if n == 0 { 10 } else { n };
+                self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(n);
                 self.instruction_pointer += 1;
             }
             Instruction::DEC(n) => {
-                self.memory[self.memory_pointer] -= if n == 0 { 10 } else { n };
+                self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(n);
                 self.instruction_pointer += 1;
             }
             Instruction::FWD(n) => {
-                self.memory_pointer += if n == 0 { 10 } else { n } as usize;
+                self.memory_pointer += n as usize;
                 if self.memory_pointer > self.memory.len() - 1 {
                     self.memory.resize(self.memory.len() * 2, 0);
                 }
-                self.memory_pointer &= self.memory.len() - 1;
+                // self.memory_pointer &= self.memory.len() - 1;
                 self.instruction_pointer += 1;
             }
             Instruction::BAK(n) => {
-                self.memory_pointer -= if n == 0 { 10 } else { n } as usize;
+                self.memory_pointer = self.memory_pointer.wrapping_sub(n as usize);
                 self.memory_pointer &= self.memory.len() - 1;
                 self.instruction_pointer += 1;
             }
@@ -152,5 +152,75 @@ impl Interpreter {
 
             self.step();
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::instruction::Instruction;
+
+    #[test]
+    fn test_interpret_inc() {
+        for i in 1..10 {
+            let instructions = vec![Instruction::INC(i)];
+            let mut interpreter = super::Interpreter::new(instructions);
+            interpreter.step();
+            assert_eq!(interpreter.memory[0], i);
+        }
+    }
+
+    #[test]
+    fn test_interpret_inc_wrapping() {
+        let instructions = vec![Instruction::INC(255), Instruction::INC(1)];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(interpreter.memory[0], 0);
+    }
+
+    #[test]
+    fn test_interpret_dec() {
+        for i in 1..10 {
+            // inc and dec same amount has to be 0
+            let instructions = vec![Instruction::INC(i), Instruction::DEC(i)];
+            let mut interpreter = super::Interpreter::new(instructions);
+            interpreter.run();
+            assert_eq!(interpreter.memory[0], 0);
+        }
+    }
+
+    #[test]
+    fn test_interpret_dec_wrapping() {
+        let instructions = vec![Instruction::DEC(1)];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(interpreter.memory[0], 255);
+    }
+
+    #[test]
+    fn test_interpret_fwd() {
+        for i in 1..250 {
+            let instructions = vec![Instruction::FWD(i)];
+            let mut interpreter = super::Interpreter::new(instructions);
+            interpreter.run();
+            assert_eq!(interpreter.memory_pointer, i as usize);
+        }
+    }
+
+    #[test]
+    fn test_interpret_bak() {
+        for i in 1..250 {
+            let instructions = vec![Instruction::FWD(i), Instruction::BAK(i)];
+            let mut interpreter = super::Interpreter::new(instructions);
+            interpreter.run();
+            assert_eq!(interpreter.memory_pointer, 0);
+        }
+    }
+
+    #[test]
+    fn test_interpret_bak_wrapping() {
+        let instructions = vec![Instruction::BAK(1)];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(interpreter.memory_pointer, interpreter.memory.len() - 1);
     }
 }
