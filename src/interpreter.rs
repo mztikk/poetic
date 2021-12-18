@@ -231,7 +231,7 @@ mod test {
     fn test_interpret_out_is_called() {
         std::panic::set_hook(Box::new(|_| {}));
 
-        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
         let mut interpreter = super::Interpreter::new_io(
             instructions,
             Box::new(default_input_stream),
@@ -244,7 +244,7 @@ mod test {
 
     #[test]
     fn test_interpret_out() {
-        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
         let mut interpreter = super::Interpreter::new_io(
             instructions,
             Box::new(default_input_stream),
@@ -257,7 +257,7 @@ mod test {
 
     #[test]
     fn test_interpret_out_different() {
-        let instructions = vec![Instruction::INC('H' as u8), Instruction::OUT];
+        let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
         let mut interpreter = super::Interpreter::new_io(
             instructions,
             Box::new(default_input_stream),
@@ -271,7 +271,7 @@ mod test {
 
     #[test]
     fn test_interpret_in() {
-        let mut input = vec!['A' as u8, 'B' as u8, 'C' as u8];
+        let mut input = vec![b'A', b'B', b'C'];
         let get_input = move || -> Option<u8> {
             if input.is_empty() {
                 None
@@ -294,9 +294,9 @@ mod test {
         );
         interpreter.run();
 
-        assert_eq!(interpreter.memory[0], 'A' as u8);
-        assert_eq!(interpreter.memory[1], 'B' as u8);
-        assert_eq!(interpreter.memory[2], 'C' as u8);
+        assert_eq!(interpreter.memory[0], b'A');
+        assert_eq!(interpreter.memory[1], b'B');
+        assert_eq!(interpreter.memory[2], b'C');
     }
 
     #[test]
