@@ -321,4 +321,69 @@ mod test {
         interpreter.run();
         assert!(interpreter.ended);
     }
+
+    #[test]
+    fn test_interpret_if() {
+        let instructions = vec![
+            Instruction::IF,
+            Instruction::INC(1),
+            Instruction::EIF,
+            Instruction::FWD(1),
+            Instruction::INC(23),
+            Instruction::END,
+        ];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(interpreter.memory[0], 0);
+        assert_eq!(interpreter.memory[1], 23);
+        assert!(interpreter.ended);
+    }
+
+    #[test]
+    fn test_interpret_if_instruction_pointer() {
+        // -[[-]>-]
+        let instructions = vec![
+            Instruction::DEC(1),
+            Instruction::IF,
+            Instruction::IF,
+            Instruction::DEC(1),
+            Instruction::EIF,
+            Instruction::FWD(1),
+            Instruction::DEC(1),
+            Instruction::EIF,
+        ];
+        let mut interpreter = super::Interpreter::new(instructions);
+        assert_eq!(interpreter.instruction_pointer, 0);
+        interpreter.step();
+        assert_eq!(interpreter.instruction_pointer, 1);
+
+        // infinite loop
+        for _ in 0..100 {
+            interpreter.step();
+            assert_eq!(interpreter.instruction_pointer, 2);
+            interpreter.step();
+            assert_eq!(interpreter.instruction_pointer, 3);
+            interpreter.step();
+            assert_eq!(interpreter.instruction_pointer, 4);
+        }
+    }
+
+    #[test]
+    fn test_interpret_eif() {
+        let instructions = vec![
+            Instruction::INC(1),
+            Instruction::IF,
+            Instruction::FWD(1),
+            Instruction::INC(5),
+            Instruction::BAK(1),
+            Instruction::DEC(1),
+            Instruction::EIF,
+            Instruction::END,
+        ];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(interpreter.memory[0], 0);
+        assert_eq!(interpreter.memory[1], 5);
+        assert!(interpreter.ended);
+    }
 }
