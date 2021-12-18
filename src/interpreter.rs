@@ -298,4 +298,27 @@ mod test {
         assert_eq!(interpreter.memory[1], 'B' as u8);
         assert_eq!(interpreter.memory[2], 'C' as u8);
     }
+
+    #[test]
+    fn test_not_ended() {
+        let instructions = vec![Instruction::INC(1)];
+        let interpreter = super::Interpreter::new(instructions);
+        assert!(!interpreter.ended);
+    }
+
+    #[test]
+    fn test_ended_after_run() {
+        let instructions = vec![Instruction::INC(1)];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert!(interpreter.ended);
+    }
+
+    #[test]
+    fn test_interpret_end() {
+        let instructions = vec![Instruction::END];
+        let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert!(interpreter.ended);
+    }
 }
