@@ -85,7 +85,7 @@ impl Parser {
                 8 => result.push(Instruction::IN),
                 9 => result.push(Instruction::RND),
                 10 => result.push(Instruction::END),
-                _ => panic!("Unknown instruction"),
+                _ => panic!("Unknown instruction '{}'", arg),
             }
         }
 
