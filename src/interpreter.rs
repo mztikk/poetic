@@ -70,104 +70,17 @@ impl Interpreter {
     }
 
     pub fn step(&mut self) {
-        let instruction = self.instructions[self.instruction_pointer];
-        match instruction {
-            Instruction::END => {
-                self.ended = true;
-            }
-            Instruction::IF => {
-                if self.memory[self.memory_pointer] == 0 {
-                    match self.jump_table.entry(self.instruction_pointer) {
-                        Entry::Vacant(entry) => {
-                            let mut nested = 1;
-                            while nested != 0 {
-                                self.instruction_pointer += 1;
-                                let nested_instruction =
-                                    self.instructions[self.instruction_pointer];
-                                match nested_instruction {
-                                    Instruction::IF => {
-                                        nested += 1;
-                                    }
-                                    Instruction::EIF => {
-                                        nested -= 1;
-                                    }
-                                    _ => {}
-                                }
-                            }
-                            entry.insert(self.instruction_pointer);
-                        }
-                        Entry::Occupied(entry) => {
-                            self.instruction_pointer = *entry.get();
-                        }
-                    };
-                } else {
-                    self.instruction_pointer += 1;
-                }
-            }
-            Instruction::EIF => {
-                if self.memory[self.memory_pointer] != 0 {
-                    match self.jump_table.entry(self.instruction_pointer) {
-                        Entry::Vacant(entry) => {
-                            let mut nested = -1;
-                            while nested != 0 {
-                                self.instruction_pointer -= 1;
-                                let nested_instruction =
-                                    self.instructions[self.instruction_pointer];
-                                match nested_instruction {
-                                    Instruction::IF => {
-                                        nested += 1;
-                                    }
-                                    Instruction::EIF => {
-                                        nested -= 1;
-                                    }
-                                    _ => {}
-                                }
-                            }
-                            entry.insert(self.instruction_pointer);
-                        }
-                        Entry::Occupied(entry) => {
-                            self.instruction_pointer = *entry.get();
-                        }
-                    };
-                } else {
-                    self.instruction_pointer += 1;
-                }
-            }
-            Instruction::INC(n) => {
-                self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(n);
-                self.instruction_pointer += 1;
-            }
-            Instruction::DEC(n) => {
-                self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(n);
-                self.instruction_pointer += 1;
-            }
-            Instruction::FWD(n) => {
-                self.memory_pointer += n as usize;
-                if self.memory_pointer > self.memory.len() - 1 {
-                    self.memory.resize(self.memory.len() * 2, 0);
-                }
-                self.instruction_pointer += 1;
-            }
-            Instruction::BAK(n) => {
-                self.memory_pointer =
-                    self.memory_pointer.wrapping_sub(n as usize) % self.memory.len();
-                self.instruction_pointer += 1;
-            }
-            Instruction::OUT => {
-                (self.output)(format!("{}", self.memory[self.memory_pointer] as char));
-                self.instruction_pointer += 1;
-            }
-            Instruction::IN => {
-                if let Some(input) = (self.input)() {
-                    self.memory[self.memory_pointer] = input;
-                }
-
-                self.instruction_pointer += 1;
-            }
-            Instruction::RND => {
-                self.memory[self.memory_pointer] = rand::random::<u8>();
-                self.instruction_pointer += 1;
-            }
+        match self.instructions[self.instruction_pointer] {
+            Instruction::END => self.interpret_end(),
+            Instruction::IF => self.interpret_if(),
+            Instruction::EIF => self.interpret_eif(),
+            Instruction::INC(n) => self.interpret_inc(n),
+            Instruction::DEC(n) => self.interpret_dec(n),
+            Instruction::FWD(n) => self.interpret_fwd(n),
+            Instruction::BAK(n) => self.interpret_bak(n),
+            Instruction::OUT => self.interpret_out(),
+            Instruction::IN => self.interpret_in(),
+            Instruction::RND => self.interpret_rnd(),
         }
     }
 
@@ -180,6 +93,108 @@ impl Interpreter {
 
             self.step();
         }
+    }
+
+    fn interpret_rnd(&mut self) {
+        self.memory[self.memory_pointer] = rand::random::<u8>();
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_in(&mut self) {
+        if let Some(input) = (self.input)() {
+            self.memory[self.memory_pointer] = input;
+        }
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_out(&mut self) {
+        (self.output)(format!("{}", self.memory[self.memory_pointer] as char));
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_bak(&mut self, n: u8) {
+        self.memory_pointer = self.memory_pointer.wrapping_sub(n as usize) % self.memory.len();
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_fwd(&mut self, n: u8) {
+        self.memory_pointer += n as usize;
+        if self.memory_pointer > self.memory.len() - 1 {
+            self.memory.resize(self.memory.len() * 2, 0);
+        }
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_dec(&mut self, n: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(n);
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_inc(&mut self, n: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(n);
+        self.instruction_pointer += 1;
+    }
+
+    fn interpret_eif(&mut self) {
+        if self.memory[self.memory_pointer] != 0 {
+            match self.jump_table.entry(self.instruction_pointer) {
+                Entry::Vacant(entry) => {
+                    let mut nested = -1;
+                    while nested != 0 {
+                        self.instruction_pointer -= 1;
+                        let nested_instruction = self.instructions[self.instruction_pointer];
+                        match nested_instruction {
+                            Instruction::IF => {
+                                nested += 1;
+                            }
+                            Instruction::EIF => {
+                                nested -= 1;
+                            }
+                            _ => {}
+                        }
+                    }
+                    entry.insert(self.instruction_pointer);
+                }
+                Entry::Occupied(entry) => {
+                    self.instruction_pointer = *entry.get();
+                }
+            };
+        } else {
+            self.instruction_pointer += 1;
+        }
+    }
+
+    fn interpret_if(&mut self) {
+        if self.memory[self.memory_pointer] == 0 {
+            match self.jump_table.entry(self.instruction_pointer) {
+                Entry::Vacant(entry) => {
+                    let mut nested = 1;
+                    while nested != 0 {
+                        self.instruction_pointer += 1;
+                        let nested_instruction = self.instructions[self.instruction_pointer];
+                        match nested_instruction {
+                            Instruction::IF => {
+                                nested += 1;
+                            }
+                            Instruction::EIF => {
+                                nested -= 1;
+                            }
+                            _ => {}
+                        }
+                    }
+                    entry.insert(self.instruction_pointer);
+                }
+                Entry::Occupied(entry) => {
+                    self.instruction_pointer = *entry.get();
+                }
+            };
+        } else {
+            self.instruction_pointer += 1;
+        }
+    }
+
+    fn interpret_end(&mut self) {
+        self.ended = true;
     }
 }
 
