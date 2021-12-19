@@ -20,7 +20,12 @@ pub struct Interpreter {
 pub fn default_input_stream() -> Option<u8> {
     let mut input = vec![0; 1];
     match std::io::stdin().read_exact(&mut input) {
-        Ok(_) => Some(input[0]),
+        Ok(_) => match input[0] {
+            0 => None,
+            b'\n' => None,
+            b'\r' => None,
+            _ => Some(input[0]),
+        },
         Err(_) => None,
     }
 }
