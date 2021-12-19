@@ -1,4 +1,7 @@
-use std::io::Read;
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    io::Read,
+};
 
 use crate::instruction::Instruction;
 
@@ -14,6 +17,7 @@ pub struct Interpreter {
     pub input: Box<dyn FnMut() -> Option<u8>>,
     pub output: Box<dyn FnMut(String)>,
 
+    jump_table: HashMap<usize, usize>,
     ended: bool,
 }
 
@@ -43,6 +47,7 @@ impl Interpreter {
             memory_pointer: 0,
             input: Box::new(default_input_stream),
             output: Box::new(default_output_stream),
+            jump_table: HashMap::new(),
             ended: false,
         }
     }
@@ -59,6 +64,7 @@ impl Interpreter {
             memory_pointer: 0,
             input,
             output,
+            jump_table: HashMap::new(),
             ended: false,
         }
     }
@@ -71,40 +77,58 @@ impl Interpreter {
             }
             Instruction::IF => {
                 if self.memory[self.memory_pointer] == 0 {
-                    let mut nested = 1;
-                    while nested != 0 {
-                        self.instruction_pointer += 1;
-                        let nested_instruction = self.instructions[self.instruction_pointer];
-                        match nested_instruction {
-                            Instruction::IF => {
-                                nested += 1;
+                    match self.jump_table.entry(self.instruction_pointer) {
+                        Entry::Vacant(entry) => {
+                            let mut nested = 1;
+                            while nested != 0 {
+                                self.instruction_pointer += 1;
+                                let nested_instruction =
+                                    self.instructions[self.instruction_pointer];
+                                match nested_instruction {
+                                    Instruction::IF => {
+                                        nested += 1;
+                                    }
+                                    Instruction::EIF => {
+                                        nested -= 1;
+                                    }
+                                    _ => {}
+                                }
                             }
-                            Instruction::EIF => {
-                                nested -= 1;
-                            }
-                            _ => {}
+                            entry.insert(self.instruction_pointer);
                         }
-                    }
+                        Entry::Occupied(entry) => {
+                            self.instruction_pointer = *entry.get();
+                        }
+                    };
                 } else {
                     self.instruction_pointer += 1;
                 }
             }
             Instruction::EIF => {
                 if self.memory[self.memory_pointer] != 0 {
-                    let mut nested = -1;
-                    while nested != 0 {
-                        self.instruction_pointer -= 1;
-                        let nested_instruction = self.instructions[self.instruction_pointer];
-                        match nested_instruction {
-                            Instruction::IF => {
-                                nested += 1;
+                    match self.jump_table.entry(self.instruction_pointer) {
+                        Entry::Vacant(entry) => {
+                            let mut nested = -1;
+                            while nested != 0 {
+                                self.instruction_pointer -= 1;
+                                let nested_instruction =
+                                    self.instructions[self.instruction_pointer];
+                                match nested_instruction {
+                                    Instruction::IF => {
+                                        nested += 1;
+                                    }
+                                    Instruction::EIF => {
+                                        nested -= 1;
+                                    }
+                                    _ => {}
+                                }
                             }
-                            Instruction::EIF => {
-                                nested -= 1;
-                            }
-                            _ => {}
+                            entry.insert(self.instruction_pointer);
                         }
-                    }
+                        Entry::Occupied(entry) => {
+                            self.instruction_pointer = *entry.get();
+                        }
+                    };
                 } else {
                     self.instruction_pointer += 1;
                 }
