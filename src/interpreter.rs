@@ -117,12 +117,11 @@ impl Interpreter {
                 if self.memory_pointer > self.memory.len() - 1 {
                     self.memory.resize(self.memory.len() * 2, 0);
                 }
-                // self.memory_pointer &= self.memory.len() - 1;
                 self.instruction_pointer += 1;
             }
             Instruction::BAK(n) => {
-                self.memory_pointer = self.memory_pointer.wrapping_sub(n as usize);
-                self.memory_pointer &= self.memory.len() - 1;
+                self.memory_pointer =
+                    self.memory_pointer.wrapping_sub(n as usize) % self.memory.len();
                 self.instruction_pointer += 1;
             }
             Instruction::OUT => {
