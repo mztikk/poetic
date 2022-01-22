@@ -7,12 +7,132 @@ use crate::instruction::Instruction;
 
 const DEFAULT_MEMORY_SIZE: usize = 32;
 
+pub trait Memory {
+    fn get_memory_pointer(&self) -> usize;
+    fn set_memory_pointer(&mut self, pointer: usize);
+    fn inc_memory_pointer(&mut self, value: usize);
+    fn dec_memory_pointer(&mut self, value: usize);
+
+    fn get_memory_value(&self) -> u8;
+    fn set_memory_value(&mut self, value: u8);
+    fn inc_memory_value(&mut self, value: u8);
+    fn dec_memory_value(&mut self, value: u8);
+
+    fn get_memory_size(&self) -> usize;
+}
+
+struct DynamicMemory {
+    memory: Vec<u8>,
+    memory_pointer: usize,
+}
+
+impl DynamicMemory {
+    fn new() -> Self {
+        Self {
+            memory: vec![0; DEFAULT_MEMORY_SIZE],
+            memory_pointer: 0,
+        }
+    }
+}
+
+impl Memory for DynamicMemory {
+    fn get_memory_pointer(&self) -> usize {
+        self.memory_pointer
+    }
+
+    fn set_memory_pointer(&mut self, pointer: usize) {
+        self.memory_pointer = pointer;
+    }
+
+    fn inc_memory_pointer(&mut self, value: usize) {
+        self.memory_pointer += value as usize;
+        if self.memory_pointer > self.memory.len() - 1 {
+            self.memory.resize(self.memory.len() * 2, 0);
+        }
+    }
+
+    fn dec_memory_pointer(&mut self, value: usize) {
+        self.memory_pointer = self.memory_pointer.wrapping_sub(value as usize) % self.memory.len();
+    }
+
+    fn get_memory_value(&self) -> u8 {
+        self.memory[self.memory_pointer]
+    }
+
+    fn set_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = value;
+    }
+
+    fn inc_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(value);
+    }
+
+    fn dec_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(value);
+    }
+
+    fn get_memory_size(&self) -> usize {
+        self.memory.len()
+    }
+}
+
+struct FixedMemory {
+    memory: Vec<u8>,
+    memory_pointer: usize,
+}
+
+impl FixedMemory {
+    fn new(size: usize) -> Self {
+        Self {
+            memory: vec![0; size],
+            memory_pointer: 0,
+        }
+    }
+}
+
+impl Memory for FixedMemory {
+    fn get_memory_pointer(&self) -> usize {
+        self.memory_pointer
+    }
+
+    fn set_memory_pointer(&mut self, pointer: usize) {
+        self.memory_pointer = pointer;
+    }
+
+    fn inc_memory_pointer(&mut self, value: usize) {
+        self.memory_pointer = self.memory_pointer.wrapping_add(value as usize) % self.memory.len();
+    }
+
+    fn dec_memory_pointer(&mut self, value: usize) {
+        self.memory_pointer = self.memory_pointer.wrapping_sub(value as usize) % self.memory.len();
+    }
+
+    fn get_memory_value(&self) -> u8 {
+        self.memory[self.memory_pointer]
+    }
+
+    fn set_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = value;
+    }
+
+    fn inc_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(value);
+    }
+
+    fn dec_memory_value(&mut self, value: u8) {
+        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(value);
+    }
+
+    fn get_memory_size(&self) -> usize {
+        self.memory.len()
+    }
+}
+
 pub struct Interpreter {
     pub instructions: Vec<Instruction>,
     pub instruction_pointer: usize,
 
-    pub memory: Vec<u8>,
-    pub memory_pointer: usize,
+    pub memory: Box<dyn Memory>,
 
     pub input: Box<dyn FnMut() -> Option<u8>>,
     pub output: Box<dyn FnMut(String)>,
@@ -43,8 +163,19 @@ impl Interpreter {
         Self {
             instructions,
             instruction_pointer: 0,
-            memory: vec![0; DEFAULT_MEMORY_SIZE],
-            memory_pointer: 0,
+            memory: Box::new(DynamicMemory::new()),
+            input: Box::new(default_input_stream),
+            output: Box::new(default_output_stream),
+            jump_table: HashMap::new(),
+            ended: false,
+        }
+    }
+
+    pub fn new_fixed_size(instructions: Vec<Instruction>, size: usize) -> Self {
+        Self {
+            instructions,
+            instruction_pointer: 0,
+            memory: Box::new(FixedMemory::new(size)),
             input: Box::new(default_input_stream),
             output: Box::new(default_output_stream),
             jump_table: HashMap::new(),
@@ -60,8 +191,24 @@ impl Interpreter {
         Self {
             instructions,
             instruction_pointer: 0,
-            memory: vec![0; DEFAULT_MEMORY_SIZE],
-            memory_pointer: 0,
+            memory: Box::new(DynamicMemory::new()),
+            input,
+            output,
+            jump_table: HashMap::new(),
+            ended: false,
+        }
+    }
+
+    pub fn new_fixed_size_io(
+        instructions: Vec<Instruction>,
+        size: usize,
+        input: Box<dyn FnMut() -> Option<u8>>,
+        output: Box<dyn FnMut(String)>,
+    ) -> Self {
+        Self {
+            instructions,
+            instruction_pointer: 0,
+            memory: Box::new(FixedMemory::new(size)),
             input,
             output,
             jump_table: HashMap::new(),
@@ -96,47 +243,44 @@ impl Interpreter {
     }
 
     fn interpret_rnd(&mut self) {
-        self.memory[self.memory_pointer] = rand::random::<u8>();
+        self.memory.set_memory_value(rand::random::<u8>());
         self.instruction_pointer += 1;
     }
 
     fn interpret_in(&mut self) {
         if let Some(input) = (self.input)() {
-            self.memory[self.memory_pointer] = input;
+            self.memory.set_memory_value(input);
         }
         self.instruction_pointer += 1;
     }
 
     fn interpret_out(&mut self) {
-        (self.output)(format!("{}", self.memory[self.memory_pointer] as char));
+        (self.output)(format!("{}", self.memory.get_memory_value() as char));
         self.instruction_pointer += 1;
     }
 
     fn interpret_bak(&mut self, n: u8) {
-        self.memory_pointer = self.memory_pointer.wrapping_sub(n as usize) % self.memory.len();
+        self.memory.dec_memory_pointer(n as usize);
         self.instruction_pointer += 1;
     }
 
     fn interpret_fwd(&mut self, n: u8) {
-        self.memory_pointer += n as usize;
-        if self.memory_pointer > self.memory.len() - 1 {
-            self.memory.resize(self.memory.len() * 2, 0);
-        }
+        self.memory.inc_memory_pointer(n as usize);
         self.instruction_pointer += 1;
     }
 
     fn interpret_dec(&mut self, n: u8) {
-        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_sub(n);
+        self.memory.dec_memory_value(n);
         self.instruction_pointer += 1;
     }
 
     fn interpret_inc(&mut self, n: u8) {
-        self.memory[self.memory_pointer] = self.memory[self.memory_pointer].wrapping_add(n);
+        self.memory.inc_memory_value(n);
         self.instruction_pointer += 1;
     }
 
     fn interpret_eif(&mut self) {
-        if self.memory[self.memory_pointer] != 0 {
+        if self.memory.get_memory_value() != 0 {
             match self.jump_table.entry(self.instruction_pointer) {
                 Entry::Vacant(entry) => {
                     let mut nested = -1;
@@ -165,7 +309,7 @@ impl Interpreter {
     }
 
     fn interpret_if(&mut self) {
-        if self.memory[self.memory_pointer] == 0 {
+        if self.memory.get_memory_value() == 0 {
             match self.jump_table.entry(self.instruction_pointer) {
                 Entry::Vacant(entry) => {
                     let mut nested = 1;
@@ -210,7 +354,8 @@ mod test {
             let instructions = vec![Instruction::INC(i)];
             let mut interpreter = super::Interpreter::new(instructions);
             interpreter.step();
-            assert_eq!(interpreter.memory[0], i);
+            interpreter.memory.set_memory_pointer(0);
+            assert_eq!(interpreter.memory.get_memory_value(), i);
         }
     }
 
@@ -219,7 +364,8 @@ mod test {
         let instructions = vec![Instruction::INC(255), Instruction::INC(1)];
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
-        assert_eq!(interpreter.memory[0], 0);
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
     }
 
     #[test]
@@ -229,7 +375,8 @@ mod test {
             let instructions = vec![Instruction::INC(i), Instruction::DEC(i)];
             let mut interpreter = super::Interpreter::new(instructions);
             interpreter.run();
-            assert_eq!(interpreter.memory[0], 0);
+            interpreter.memory.set_memory_pointer(0);
+            assert_eq!(interpreter.memory.get_memory_value(), 0);
         }
     }
 
@@ -238,7 +385,8 @@ mod test {
         let instructions = vec![Instruction::DEC(1)];
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
-        assert_eq!(interpreter.memory[0], 255);
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 255);
     }
 
     #[test]
@@ -247,7 +395,7 @@ mod test {
             let instructions = vec![Instruction::FWD(i)];
             let mut interpreter = super::Interpreter::new(instructions);
             interpreter.run();
-            assert_eq!(interpreter.memory_pointer, i as usize);
+            assert_eq!(interpreter.memory.get_memory_pointer(), i as usize);
         }
     }
 
@@ -257,7 +405,27 @@ mod test {
             let instructions = vec![Instruction::FWD(i), Instruction::BAK(i)];
             let mut interpreter = super::Interpreter::new(instructions);
             interpreter.run();
-            assert_eq!(interpreter.memory_pointer, 0);
+            assert_eq!(interpreter.memory.get_memory_pointer(), 0);
+        }
+    }
+
+    #[test]
+    fn test_interpret_fwd_fixed() {
+        for i in 1..250 {
+            let instructions = vec![Instruction::FWD(i)];
+            let mut interpreter = super::Interpreter::new_fixed_size(instructions, 30000);
+            interpreter.run();
+            assert_eq!(interpreter.memory.get_memory_pointer(), i as usize);
+        }
+    }
+
+    #[test]
+    fn test_interpret_bak_fixed() {
+        for i in 1..250 {
+            let instructions = vec![Instruction::FWD(i), Instruction::BAK(i)];
+            let mut interpreter = super::Interpreter::new_fixed_size(instructions, 30000);
+            interpreter.run();
+            assert_eq!(interpreter.memory.get_memory_pointer(), 0);
         }
     }
 
@@ -266,7 +434,10 @@ mod test {
         let instructions = vec![Instruction::BAK(1)];
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
-        assert_eq!(interpreter.memory_pointer, interpreter.memory.len() - 1);
+        assert_eq!(
+            interpreter.memory.get_memory_pointer(),
+            interpreter.memory.get_memory_size() - 1
+        );
     }
 
     #[test]
@@ -337,9 +508,12 @@ mod test {
         );
         interpreter.run();
 
-        assert_eq!(interpreter.memory[0], b'A');
-        assert_eq!(interpreter.memory[1], b'B');
-        assert_eq!(interpreter.memory[2], b'C');
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), b'A');
+        interpreter.memory.set_memory_pointer(1);
+        assert_eq!(interpreter.memory.get_memory_value(), b'B');
+        interpreter.memory.set_memory_pointer(2);
+        assert_eq!(interpreter.memory.get_memory_value(), b'C');
     }
 
     #[test]
@@ -377,8 +551,13 @@ mod test {
         ];
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
-        assert_eq!(interpreter.memory[0], 0);
-        assert_eq!(interpreter.memory[1], 23);
+
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.memory.set_memory_pointer(1);
+        assert_eq!(interpreter.memory.get_memory_value(), 23);
+
         assert!(interpreter.ended);
     }
 
@@ -425,8 +604,13 @@ mod test {
         ];
         let mut interpreter = super::Interpreter::new(instructions);
         interpreter.run();
-        assert_eq!(interpreter.memory[0], 0);
-        assert_eq!(interpreter.memory[1], 5);
+
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.memory.set_memory_pointer(1);
+        assert_eq!(interpreter.memory.get_memory_value(), 5);
+
         assert!(interpreter.ended);
     }
 }
