@@ -247,6 +247,9 @@ impl Interpreter {
             Instruction::OUT => self.interpret_out(),
             Instruction::IN => self.interpret_in(),
             Instruction::RND => self.interpret_rnd(),
+            Instruction::JIZ(n) => self.interpret_jiz(n),
+            Instruction::JNZ(n) => self.interpret_jnz(n),
+            Instruction::JMP(n) => self.interpret_jmp(n),
         }
     }
 
@@ -358,6 +361,26 @@ impl Interpreter {
 
     fn interpret_end(&mut self) {
         self.ended = true;
+    }
+
+    fn interpret_jiz(&mut self, n: usize) {
+        if self.memory.get_memory_value() == 0 {
+            self.instruction_pointer = n;
+        } else {
+            self.instruction_pointer += 1;
+        }
+    }
+
+    fn interpret_jnz(&mut self, n: usize) {
+        if self.memory.get_memory_value() != 0 {
+            self.instruction_pointer = n;
+        } else {
+            self.instruction_pointer += 1;
+        }
+    }
+
+    fn interpret_jmp(&mut self, n: usize) {
+        self.instruction_pointer = n;
     }
 }
 

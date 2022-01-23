@@ -11,4 +11,7 @@ pub enum Instruction {
     OUT,
     IN,
     RND,
+    JIZ(usize),
+    JNZ(usize),
+    JMP(usize),
 }
