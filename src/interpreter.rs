@@ -5,6 +5,16 @@ use std::{
 
 use crate::instruction::Instruction;
 
+fn wrap(value: i64, bound: i64) -> i64 {
+    if value < 0 {
+        value + bound
+    } else if value >= bound {
+        value - bound
+    } else {
+        value
+    }
+}
+
 const DEFAULT_MEMORY_SIZE: usize = 32;
 
 pub trait Memory {
@@ -45,14 +55,17 @@ impl Memory for DynamicMemory {
     }
 
     fn inc_memory_pointer(&mut self, value: usize) {
-        self.memory_pointer += value as usize;
+        self.memory_pointer += value;
         if self.memory_pointer > self.memory.len() - 1 {
             self.memory.resize(self.memory.len() * 2, 0);
         }
     }
 
     fn dec_memory_pointer(&mut self, value: usize) {
-        self.memory_pointer = self.memory_pointer.wrapping_sub(value as usize) % self.memory.len();
+        self.memory_pointer = wrap(
+            self.memory_pointer as i64 - value as i64,
+            self.memory.len() as i64,
+        ) as usize;
     }
 
     fn get_memory_value(&self) -> u8 {
@@ -100,11 +113,17 @@ impl Memory for FixedMemory {
     }
 
     fn inc_memory_pointer(&mut self, value: usize) {
-        self.memory_pointer = self.memory_pointer.wrapping_add(value as usize) % self.memory.len();
+        self.memory_pointer = wrap(
+            self.memory_pointer as i64 + value as i64,
+            self.memory.len() as i64,
+        ) as usize;
     }
 
     fn dec_memory_pointer(&mut self, value: usize) {
-        self.memory_pointer = self.memory_pointer.wrapping_sub(value as usize) % self.memory.len();
+        self.memory_pointer = wrap(
+            self.memory_pointer as i64 - value as i64,
+            self.memory.len() as i64,
+        ) as usize;
     }
 
     fn get_memory_value(&self) -> u8 {
@@ -433,6 +452,17 @@ mod test {
     fn test_interpret_bak_wrapping() {
         let instructions = vec![Instruction::BAK(1)];
         let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        assert_eq!(
+            interpreter.memory.get_memory_pointer(),
+            interpreter.memory.get_memory_size() - 1
+        );
+    }
+
+    #[test]
+    fn test_interpret_bak_wrapping_fixed() {
+        let instructions = vec![Instruction::BAK(1)];
+        let mut interpreter = super::Interpreter::new_fixed_size(instructions, 20000);
         interpreter.run();
         assert_eq!(
             interpreter.memory.get_memory_pointer(),
