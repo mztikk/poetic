@@ -237,19 +237,19 @@ impl Interpreter {
 
     pub fn step(&mut self) {
         match self.instructions[self.instruction_pointer] {
-            Instruction::END => self.interpret_end(),
-            Instruction::IF => self.interpret_if(),
-            Instruction::EIF => self.interpret_eif(),
+            Instruction::JIZ(n) => self.interpret_jiz(n),
+            Instruction::JNZ(n) => self.interpret_jnz(n),
             Instruction::INC(n) => self.interpret_inc(n),
             Instruction::DEC(n) => self.interpret_dec(n),
             Instruction::FWD(n) => self.interpret_fwd(n),
             Instruction::BAK(n) => self.interpret_bak(n),
+            Instruction::IF => self.interpret_if(),
+            Instruction::EIF => self.interpret_eif(),
             Instruction::OUT => self.interpret_out(),
             Instruction::IN => self.interpret_in(),
             Instruction::RND => self.interpret_rnd(),
-            Instruction::JIZ(n) => self.interpret_jiz(n),
-            Instruction::JNZ(n) => self.interpret_jnz(n),
             Instruction::JMP(n) => self.interpret_jmp(n),
+            Instruction::END => self.interpret_end(),
         }
     }
 
