@@ -94,3 +94,72 @@ impl Optimize for FwdBakMerger {
         result
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{instruction::Instruction, optimizer::Optimize};
+
+    #[test]
+    fn test_fwd_merged() {
+        let mut instructions = vec![
+            Instruction::FWD(1),
+            Instruction::FWD(2),
+            Instruction::FWD(3),
+        ];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::FWD(6)]);
+    }
+
+    #[test]
+    fn test_bak_merged() {
+        let mut instructions = vec![
+            Instruction::BAK(1),
+            Instruction::BAK(2),
+            Instruction::BAK(3),
+        ];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::BAK(6)]);
+    }
+
+    #[test]
+    fn test_fwd_bak_merged() {
+        let mut instructions = vec![
+            Instruction::FWD(1), // +1
+            Instruction::BAK(2), // -2
+            Instruction::FWD(3), // +3
+            Instruction::BAK(4), // -4 = -2
+        ];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::BAK(2)]);
+    }
+
+    #[test]
+    fn test_fwd_greater255_merged() {
+        let mut instructions = vec![Instruction::FWD(150), Instruction::FWD(150)];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::FWD(u8::MAX), Instruction::FWD(45)]
+        );
+    }
+
+    #[test]
+    fn test_bak_greater255_merged() {
+        let mut instructions = vec![Instruction::BAK(150), Instruction::BAK(150)];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::BAK(u8::MAX), Instruction::BAK(45)]
+        );
+    }
+}
