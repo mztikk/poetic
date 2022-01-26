@@ -94,3 +94,72 @@ impl Optimize for IncDecMerger {
         result
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{instruction::Instruction, optimizer::Optimize};
+
+    #[test]
+    fn test_inc_merged() {
+        let mut instructions = vec![
+            Instruction::INC(1),
+            Instruction::INC(2),
+            Instruction::INC(3),
+        ];
+
+        let optimizer = super::IncDecMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::INC(6)]);
+    }
+
+    #[test]
+    fn test_dec_merged() {
+        let mut instructions = vec![
+            Instruction::DEC(1),
+            Instruction::DEC(2),
+            Instruction::DEC(3),
+        ];
+
+        let optimizer = super::IncDecMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::DEC(6)]);
+    }
+
+    #[test]
+    fn test_inc_dec_merged() {
+        let mut instructions = vec![
+            Instruction::INC(1), // +1
+            Instruction::DEC(2), // -2
+            Instruction::INC(3), // +3
+            Instruction::DEC(4), // -4 = -2
+        ];
+
+        let optimizer = super::IncDecMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(instructions, vec![Instruction::DEC(2)]);
+    }
+
+    #[test]
+    fn test_inc_greater255_merged() {
+        let mut instructions = vec![Instruction::INC(150), Instruction::INC(150)];
+
+        let optimizer = super::IncDecMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::INC(u8::MAX), Instruction::INC(45)]
+        );
+    }
+
+    #[test]
+    fn test_dec_greater255_merged() {
+        let mut instructions = vec![Instruction::DEC(150), Instruction::DEC(150)];
+
+        let optimizer = super::IncDecMerger;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::DEC(u8::MAX), Instruction::DEC(45)]
+        );
+    }
+}

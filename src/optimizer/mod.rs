@@ -10,6 +10,7 @@ use self::{
 };
 
 pub trait Optimize {
+    #[must_use]
     fn optimize(&self, instructions: &mut [Instruction]) -> Vec<Instruction>;
 }
 
