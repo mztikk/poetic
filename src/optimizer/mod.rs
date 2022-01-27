@@ -2,12 +2,11 @@ mod fwd_bak_merger;
 mod if_eif_jmp_rewriter;
 mod inc_dec_merger;
 
-use crate::instruction::Instruction;
-
 use self::{
     fwd_bak_merger::FwdBakMerger, if_eif_jmp_rewriter::IfEifJmpRewriter,
     inc_dec_merger::IncDecMerger,
 };
+use crate::instruction::Instruction;
 
 pub trait Optimize {
     #[must_use]

@@ -1,9 +1,8 @@
+use crate::instruction::Instruction;
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::Read,
 };
-
-use crate::instruction::Instruction;
 
 fn wrap(value: i64, bound: i64) -> i64 {
     if value < 0 {

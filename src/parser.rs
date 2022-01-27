@@ -1,6 +1,5 @@
-use std::{cmp::Ordering, collections::VecDeque};
-
 use crate::instruction::Instruction;
+use std::{cmp::Ordering, collections::VecDeque};
 
 pub struct Parser {}
 

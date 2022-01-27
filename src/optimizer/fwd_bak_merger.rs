@@ -1,6 +1,5 @@
-use crate::instruction::Instruction;
-
 use super::Optimize;
+use crate::instruction::Instruction;
 
 pub(crate) struct FwdBakMerger;
 
