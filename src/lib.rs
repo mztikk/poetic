@@ -2,12 +2,3 @@ pub mod instruction;
 pub mod interpreter;
 pub mod optimizer;
 pub mod parser;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}

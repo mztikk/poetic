@@ -61,7 +61,7 @@ fn get_total_count_fwd_bak(instructions: &[Instruction], start: usize) -> (i64, 
 }
 
 impl Optimize for FwdBakMerger {
-    fn optimize(&self, instructions: &mut [Instruction]) -> Vec<Instruction> {
+    fn optimize(&self, instructions: &[Instruction]) -> Vec<Instruction> {
         let mut result = Vec::new();
 
         let mut i = 0;
@@ -108,7 +108,7 @@ mod test {
         ];
 
         let optimizer = super::FwdBakMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::FWD(6)]);
     }
 
@@ -121,7 +121,7 @@ mod test {
         ];
 
         let optimizer = super::FwdBakMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::BAK(6)]);
     }
 
@@ -135,7 +135,7 @@ mod test {
         ];
 
         let optimizer = super::FwdBakMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::BAK(2)]);
     }
 
@@ -144,7 +144,7 @@ mod test {
         let mut instructions = vec![Instruction::FWD(150), Instruction::FWD(150)];
 
         let optimizer = super::FwdBakMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(
             instructions,
             vec![Instruction::FWD(u8::MAX), Instruction::FWD(45)]
@@ -156,7 +156,7 @@ mod test {
         let mut instructions = vec![Instruction::BAK(150), Instruction::BAK(150)];
 
         let optimizer = super::FwdBakMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(
             instructions,
             vec![Instruction::BAK(u8::MAX), Instruction::BAK(45)]

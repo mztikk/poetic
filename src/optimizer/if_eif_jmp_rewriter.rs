@@ -1,18 +1,14 @@
-use std::collections::HashMap;
-
-use crate::instruction::Instruction;
-
 use super::Optimize;
+use crate::instruction::Instruction;
 
 pub(crate) struct IfEifJmpRewriter;
 
 impl Optimize for IfEifJmpRewriter {
     fn optimize(
         &self,
-        instructions: &mut [crate::instruction::Instruction],
+        instructions: &[crate::instruction::Instruction],
     ) -> Vec<crate::instruction::Instruction> {
-        let mut jiz_table = HashMap::new();
-        let mut jnz_table = HashMap::new();
+        let mut result = Vec::new();
 
         let mut i = 0;
         while i < instructions.len() {
@@ -35,8 +31,7 @@ impl Optimize for IfEifJmpRewriter {
                         }
                     }
 
-                    let jiz = Instruction::JIZ(instruction_pointer);
-                    jiz_table.insert(i, jiz);
+                    result.push(Instruction::JIZ(instruction_pointer));
                 }
                 Instruction::EIF => {
                     let mut instruction_pointer = i;
@@ -56,32 +51,15 @@ impl Optimize for IfEifJmpRewriter {
                         }
                     }
 
-                    let jnz = Instruction::JNZ(instruction_pointer);
-                    jnz_table.insert(i, jnz);
+                    result.push(Instruction::JNZ(instruction_pointer));
                 }
-                _ => {}
+                instruction => result.push(instruction),
             }
 
             i += 1;
         }
 
-        for (i, instruction) in instructions.iter_mut().enumerate() {
-            match instruction {
-                Instruction::IF => {
-                    let jiz = jiz_table.get(&i).unwrap();
-
-                    *instruction = *jiz;
-                }
-                Instruction::EIF => {
-                    let jnz = jnz_table.get(&i).unwrap();
-
-                    *instruction = *jnz;
-                }
-                _ => {}
-            }
-        }
-
-        instructions.to_vec()
+        result
     }
 }
 
@@ -91,10 +69,10 @@ mod test {
 
     #[test]
     fn test_if_eif_direct() {
-        let mut instructions = vec![Instruction::IF, Instruction::EIF];
+        let instructions = vec![Instruction::IF, Instruction::EIF];
 
         let optimizer = super::IfEifJmpRewriter;
-        let optimized_instructions = optimizer.optimize(&mut instructions);
+        let optimized_instructions = optimizer.optimize(&instructions);
         assert_eq!(
             optimized_instructions,
             vec![Instruction::JIZ(1), Instruction::JNZ(0)]
@@ -103,7 +81,7 @@ mod test {
 
     #[test]
     fn test_if_eif_nested() {
-        let mut instructions = vec![
+        let instructions = vec![
             Instruction::IF,
             Instruction::IF,
             Instruction::EIF,
@@ -111,7 +89,7 @@ mod test {
         ];
 
         let optimizer = super::IfEifJmpRewriter;
-        let optimized_instructions = optimizer.optimize(&mut instructions);
+        let optimized_instructions = optimizer.optimize(&instructions);
         assert_eq!(
             optimized_instructions,
             vec![
@@ -125,7 +103,7 @@ mod test {
 
     #[test]
     fn test_if_eif_jmp_rewriter() {
-        let mut instructions = vec![
+        let instructions = vec![
             Instruction::IF,
             Instruction::INC(1),
             Instruction::EIF,
@@ -138,9 +116,9 @@ mod test {
         ];
 
         let optimizer = super::IfEifJmpRewriter;
-        instructions = optimizer.optimize(&mut instructions);
+        let optimized_instructions = optimizer.optimize(&instructions);
         assert_eq!(
-            instructions,
+            optimized_instructions,
             vec![
                 Instruction::JIZ(2),
                 Instruction::INC(1),

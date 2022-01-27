@@ -11,15 +11,14 @@ use self::{
 
 pub trait Optimize {
     #[must_use]
-    fn optimize(&self, instructions: &mut [Instruction]) -> Vec<Instruction>;
+    fn optimize(&self, instructions: &[Instruction]) -> Vec<Instruction>;
 }
 
-pub struct Optimizer {
-    instructions: Vec<Instruction>,
-}
+pub struct Optimizer;
 
-impl Optimizer {
-    pub fn optimize(&mut self) -> Vec<Instruction> {
+impl Optimize for Optimizer {
+    fn optimize(&self, instructions: &[Instruction]) -> Vec<Instruction> {
+        let mut result = instructions.to_vec();
         let optimizers: Vec<Box<dyn Optimize>> = vec![
             Box::new(IncDecMerger),
             Box::new(FwdBakMerger),
@@ -27,13 +26,45 @@ impl Optimizer {
         ];
 
         for optimizer in &optimizers {
-            self.instructions = optimizer.optimize(&mut self.instructions);
+            result = optimizer.optimize(&result);
         }
 
-        self.instructions.clone()
+        result
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{instruction::Instruction, optimizer::Optimize};
+
+    #[test]
+    fn test_inc_dec_fwd_bak_merged() {
+        let instructions = vec![
+            Instruction::INC(2),
+            Instruction::DEC(1),
+            Instruction::FWD(2),
+            Instruction::BAK(1),
+        ];
+        let optimizer = super::Optimizer;
+        let optimized_instructions = optimizer.optimize(&instructions);
+        assert_eq!(
+            optimized_instructions,
+            vec![Instruction::INC(1), Instruction::FWD(1)]
+        );
     }
 
-    pub fn new(instructions: Vec<Instruction>) -> Self {
-        Optimizer { instructions }
+    #[test]
+    fn test_inc_dec_fwd_bak_merged_if_eif() {
+        let instructions = vec![Instruction::IF, Instruction::INC(2), Instruction::EIF];
+        let optimizer = super::Optimizer;
+        let optimized_instructions = optimizer.optimize(&instructions);
+        assert_eq!(
+            optimized_instructions,
+            vec![
+                Instruction::JIZ(2),
+                Instruction::INC(2),
+                Instruction::JNZ(0)
+            ]
+        );
     }
 }

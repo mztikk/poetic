@@ -61,7 +61,7 @@ fn get_total_count_inc_dec(instructions: &[Instruction], start: usize) -> (i64, 
 }
 
 impl Optimize for IncDecMerger {
-    fn optimize(&self, instructions: &mut [Instruction]) -> Vec<Instruction> {
+    fn optimize(&self, instructions: &[Instruction]) -> Vec<Instruction> {
         let mut result = Vec::new();
 
         let mut i = 0;
@@ -108,7 +108,7 @@ mod test {
         ];
 
         let optimizer = super::IncDecMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::INC(6)]);
     }
 
@@ -121,7 +121,7 @@ mod test {
         ];
 
         let optimizer = super::IncDecMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::DEC(6)]);
     }
 
@@ -135,7 +135,7 @@ mod test {
         ];
 
         let optimizer = super::IncDecMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::DEC(2)]);
     }
 
@@ -144,7 +144,7 @@ mod test {
         let mut instructions = vec![Instruction::INC(150), Instruction::INC(150)];
 
         let optimizer = super::IncDecMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(
             instructions,
             vec![Instruction::INC(u8::MAX), Instruction::INC(45)]
@@ -156,7 +156,7 @@ mod test {
         let mut instructions = vec![Instruction::DEC(150), Instruction::DEC(150)];
 
         let optimizer = super::IncDecMerger;
-        instructions = optimizer.optimize(&mut instructions);
+        instructions = optimizer.optimize(&instructions);
         assert_eq!(
             instructions,
             vec![Instruction::DEC(u8::MAX), Instruction::DEC(45)]
