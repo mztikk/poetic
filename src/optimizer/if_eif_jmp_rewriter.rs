@@ -84,3 +84,74 @@ impl Optimize for IfEifJmpRewriter {
         instructions.to_vec()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{instruction::Instruction, optimizer::Optimize};
+
+    #[test]
+    fn test_if_eif_direct() {
+        let mut instructions = vec![Instruction::IF, Instruction::EIF];
+
+        let optimizer = super::IfEifJmpRewriter;
+        let optimized_instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            optimized_instructions,
+            vec![Instruction::JIZ(1), Instruction::JNZ(0)]
+        );
+    }
+
+    #[test]
+    fn test_if_eif_nested() {
+        let mut instructions = vec![
+            Instruction::IF,
+            Instruction::IF,
+            Instruction::EIF,
+            Instruction::EIF,
+        ];
+
+        let optimizer = super::IfEifJmpRewriter;
+        let optimized_instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            optimized_instructions,
+            vec![
+                Instruction::JIZ(3),
+                Instruction::JIZ(2),
+                Instruction::JNZ(1),
+                Instruction::JNZ(0)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_if_eif_jmp_rewriter() {
+        let mut instructions = vec![
+            Instruction::IF,
+            Instruction::INC(1),
+            Instruction::EIF,
+            Instruction::IF,
+            Instruction::INC(2),
+            Instruction::EIF,
+            Instruction::IF,
+            Instruction::INC(3),
+            Instruction::EIF,
+        ];
+
+        let optimizer = super::IfEifJmpRewriter;
+        instructions = optimizer.optimize(&mut instructions);
+        assert_eq!(
+            instructions,
+            vec![
+                Instruction::JIZ(2),
+                Instruction::INC(1),
+                Instruction::JNZ(0),
+                Instruction::JIZ(5),
+                Instruction::INC(2),
+                Instruction::JNZ(3),
+                Instruction::JIZ(8),
+                Instruction::INC(3),
+                Instruction::JNZ(6),
+            ]
+        );
+    }
+}
