@@ -85,7 +85,7 @@ impl Optimize for FwdBakMerger {
 
                     result.extend_from_slice(&create_fwd_bak_instructions_from_total(total));
                 }
-                fwd => result.push(fwd),
+                instruction => result.push(instruction),
             }
 
             i += 1;

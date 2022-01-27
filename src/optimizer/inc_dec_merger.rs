@@ -85,7 +85,7 @@ impl Optimize for IncDecMerger {
 
                     result.extend_from_slice(&create_inc_dec_instructions_from_total(total));
                 }
-                inc => result.push(inc),
+                instruction => result.push(instruction),
             }
 
             i += 1;
