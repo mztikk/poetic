@@ -234,6 +234,31 @@ impl Interpreter {
         }
     }
 
+    pub fn with_fixed_size_memory(mut self, size: usize) -> Self {
+        self.memory = Box::new(FixedMemory::new(size));
+        self
+    }
+
+    pub fn with_input(mut self, input: Box<dyn FnMut() -> Option<u8>>) -> Self {
+        self.input = input;
+        self
+    }
+
+    pub fn with_output(mut self, output: Box<dyn FnMut(String)>) -> Self {
+        self.output = output;
+        self
+    }
+
+    pub fn with_io(
+        mut self,
+        input: Box<dyn FnMut() -> Option<u8>>,
+        output: Box<dyn FnMut(String)>,
+    ) -> Self {
+        self.input = input;
+        self.output = output;
+        self
+    }
+
     pub fn step(&mut self) {
         match self.instructions[self.instruction_pointer] {
             Instruction::JIZ(n) => self.interpret_jiz(n),
@@ -385,9 +410,7 @@ impl Interpreter {
 
 #[cfg(test)]
 mod test {
-    use crate::{instruction::Instruction, interpreter::default_input_stream};
-
-    use super::default_output_stream;
+    use crate::instruction::Instruction;
 
     #[test]
     fn test_interpret_inc() {
@@ -454,7 +477,8 @@ mod test {
     fn test_interpret_fwd_fixed() {
         for i in 1..250 {
             let instructions = vec![Instruction::FWD(i)];
-            let mut interpreter = super::Interpreter::new_fixed_size(instructions, 30000);
+            let mut interpreter =
+                super::Interpreter::new(instructions).with_fixed_size_memory(30000);
             interpreter.run();
             assert_eq!(interpreter.memory.get_memory_pointer(), i as usize);
         }
@@ -464,7 +488,8 @@ mod test {
     fn test_interpret_bak_fixed() {
         for i in 1..250 {
             let instructions = vec![Instruction::FWD(i), Instruction::BAK(i)];
-            let mut interpreter = super::Interpreter::new_fixed_size(instructions, 30000);
+            let mut interpreter =
+                super::Interpreter::new(instructions).with_fixed_size_memory(30000);
             interpreter.run();
             assert_eq!(interpreter.memory.get_memory_pointer(), 0);
         }
@@ -484,7 +509,7 @@ mod test {
     #[test]
     fn test_interpret_bak_wrapping_fixed() {
         let instructions = vec![Instruction::BAK(1)];
-        let mut interpreter = super::Interpreter::new_fixed_size(instructions, 20000);
+        let mut interpreter = super::Interpreter::new(instructions).with_fixed_size_memory(20000);
         interpreter.run();
         assert_eq!(
             interpreter.memory.get_memory_pointer(),
@@ -498,40 +523,28 @@ mod test {
         std::panic::set_hook(Box::new(|_| {}));
 
         let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
-        let mut interpreter = super::Interpreter::new_io(
-            instructions,
-            Box::new(default_input_stream),
-            Box::new(|s| {
-                panic!("{}", s);
-            }),
-        );
+        let mut interpreter = super::Interpreter::new(instructions).with_output(Box::new(|s| {
+            panic!("{}", s);
+        }));
         interpreter.run();
     }
 
     #[test]
     fn test_interpret_out() {
         let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
-        let mut interpreter = super::Interpreter::new_io(
-            instructions,
-            Box::new(default_input_stream),
-            Box::new(|s| {
-                assert_eq!(s, "H");
-            }),
-        );
+        let mut interpreter = super::Interpreter::new(instructions).with_output(Box::new(|s| {
+            assert_eq!(s, "H");
+        }));
         interpreter.run();
     }
 
     #[test]
     fn test_interpret_out_different() {
         let instructions = vec![Instruction::INC(b'H'), Instruction::OUT];
-        let mut interpreter = super::Interpreter::new_io(
-            instructions,
-            Box::new(default_input_stream),
-            Box::new(|s| {
-                assert_eq!(s, "H");
-                assert_ne!(s, "A");
-            }),
-        );
+        let mut interpreter = super::Interpreter::new(instructions).with_output(Box::new(|s| {
+            assert_eq!(s, "H");
+            assert_ne!(s, "A");
+        }));
         interpreter.run();
     }
 
@@ -553,11 +566,7 @@ mod test {
             Instruction::FWD(1),
             Instruction::IN,
         ];
-        let mut interpreter = super::Interpreter::new_io(
-            instructions,
-            Box::new(get_input),
-            Box::new(default_output_stream),
-        );
+        let mut interpreter = super::Interpreter::new(instructions).with_input(Box::new(get_input));
         interpreter.run();
 
         interpreter.memory.set_memory_pointer(0);
