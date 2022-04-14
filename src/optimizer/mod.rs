@@ -32,6 +32,18 @@ impl Optimize for Optimizer {
     }
 }
 
+impl Optimizer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for Optimizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{instruction::Instruction, optimizer::Optimize};
