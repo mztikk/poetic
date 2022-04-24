@@ -410,6 +410,8 @@ impl Interpreter {
 
 #[cfg(test)]
 mod test {
+    use std::{cell::RefCell, sync::Arc};
+
     use crate::instruction::Instruction;
 
     #[test]
@@ -546,6 +548,26 @@ mod test {
             assert_ne!(s, "A");
         }));
         interpreter.run();
+    }
+
+    #[test]
+    fn test_interpret_out_to_string() {
+        let instructions = vec![
+            Instruction::INC(b'H'),
+            Instruction::OUT,
+            Instruction::FWD(1),
+            Instruction::INC(b'A'),
+            Instruction::OUT,
+        ];
+        let output = Arc::new(RefCell::new(String::new()));
+        let output_clone = output.clone();
+        let mut interpreter =
+            super::Interpreter::new(instructions).with_output(Box::new(move |s| {
+                output_clone.borrow_mut().push_str(s.as_str());
+            }));
+        interpreter.run();
+
+        assert_eq!(output.borrow().to_string(), "HA");
     }
 
     #[test]
