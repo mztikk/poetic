@@ -169,9 +169,8 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
-    use crate::{instruction::Instruction, parser::ParseError};
-
     use super::Parser;
+    use crate::{instruction::Instruction, parser::ParseError};
 
     #[test]
     fn test_intermediate_len() {
