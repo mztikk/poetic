@@ -27,6 +27,17 @@ impl Display for ParseError {
 pub struct Parser {}
 
 impl Parser {
+    fn split_digits(d: usize) -> Vec<u8> {
+        let mut digits = VecDeque::new();
+        let mut n = d;
+        while n > 0 {
+            digits.push_front((n % 10) as u8);
+            n /= 10;
+        }
+
+        digits.into()
+    }
+
     pub fn parse_intermediate(source: &str) -> Vec<u8> {
         let mut result = Vec::new();
 
@@ -47,16 +58,7 @@ impl Parser {
             .for_each(|d| match d.cmp(&10) {
                 Ordering::Less => result.push(d as u8),
                 Ordering::Equal => result.push(0),
-                Ordering::Greater => {
-                    let mut digits = VecDeque::new();
-                    let mut n = d;
-                    while n > 0 {
-                        digits.push_front((n % 10) as u8);
-                        n /= 10;
-                    }
-
-                    result.append(&mut digits.into());
-                }
+                Ordering::Greater => result.append(&mut Parser::split_digits(d)),
             });
 
         result
@@ -374,5 +376,11 @@ mod test {
         let instructions = Parser::parse_instructions(&intermediate);
         assert!(instructions.is_ok());
         assert_eq!(instructions.unwrap()[0], Instruction::END);
+    }
+
+    #[test]
+    fn test_parser_split_digits() {
+        let digits = Parser::split_digits(568764567);
+        assert_eq!(digits, vec![5, 6, 8, 7, 6, 4, 5, 6, 7]);
     }
 }
