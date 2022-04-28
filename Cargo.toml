@@ -15,3 +15,10 @@ getrandom = { version = "0.2.6", features = ["js"], optional = true }
 
 [features]
 wasm = ["dep:getrandom"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "benchmarks"
+harness = false
