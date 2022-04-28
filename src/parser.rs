@@ -16,7 +16,11 @@ impl Display for ParseError {
                 write!(f, "Unknown instruction: {}", instruction)
             }
             ParseError::NeedsArgument(instruction) => {
-                write!(f, "Instruction {} needs an argument", instruction)
+                write!(
+                    f,
+                    "{} Instruction needs an argument",
+                    Parser::get_instruction_name(instruction)
+                )
             }
             ParseError::MissingIf => write!(f, "Missing IF"),
             ParseError::MissingEif => write!(f, "Missing EIF"),
@@ -132,6 +136,23 @@ impl Parser {
         }
 
         None
+    }
+
+    fn get_instruction_name(instruction: &u8) -> &'static str {
+        match instruction {
+            0 => "END",
+            1 => "IF",
+            2 => "EIF",
+            3 => "INC",
+            4 => "DEC",
+            5 => "FWD",
+            6 => "BAK",
+            7 => "OUT",
+            8 => "IN",
+            9 => "RND",
+            10 => "END",
+            _ => "UNKNOWN",
+        }
     }
 
     pub fn parse_instructions(intermediate: &[u8]) -> Result<Vec<Instruction>, ParseError> {
