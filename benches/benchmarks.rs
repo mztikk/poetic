@@ -55,5 +55,37 @@ fn benchmark_split_digits(c: &mut Criterion) {
     group.finish()
 }
 
-criterion_group!(benches, benchmark_split_digits);
+fn transform_char_if(c: char) -> String {
+    if c.is_alphabetic() {
+        return c.to_string();
+    } else if c == '\'' {
+        return "".to_string();
+    }
+
+    " ".to_string()
+}
+
+fn transform_char_match(c: char) -> String {
+    match c {
+        'a'..='z' | 'A'..='Z' => c.to_string(),
+        '\'' => "".to_string(),
+        _ => " ".to_string(),
+    }
+}
+
+fn benchmark_transform_char(c: &mut Criterion) {
+    let mut group = c.benchmark_group("transform_char");
+    for c in ['a', 'h', 'G', '\'', '9'].iter() {
+        group.bench_with_input(BenchmarkId::new("transform_char_if", c), c, |b, c| {
+            b.iter(|| transform_char_if(black_box(*c)))
+        });
+        group.bench_with_input(BenchmarkId::new("transform_char_match", c), c, |b, c| {
+            b.iter(|| transform_char_match(black_box(*c)))
+        });
+    }
+
+    group.finish()
+}
+
+criterion_group!(benches, benchmark_split_digits, benchmark_transform_char);
 criterion_main!(benches);

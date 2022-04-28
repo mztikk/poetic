@@ -40,20 +40,21 @@ impl Parser {
         digits
     }
 
+    /// Any character that is not an alphabetic character or apostrophe is ignored, and treated as whitespace
+    fn transform_char(c: char) -> String {
+        match c {
+            'a'..='z' | 'A'..='Z' => c.to_string(),
+            '\'' => "".to_string(),
+            _ => " ".to_string(),
+        }
+    }
+
     pub fn parse_intermediate(source: &str) -> Vec<u8> {
         let mut result = Vec::new();
 
         source
             .chars()
-            .map(|c| {
-                if c.is_alphabetic() {
-                    return c.to_string();
-                } else if c == '\'' {
-                    return "".to_string();
-                }
-
-                " ".to_string()
-            })
+            .map(Parser::transform_char)
             .collect::<String>()
             .split_whitespace()
             .map(|w| w.len())
@@ -384,5 +385,15 @@ mod test {
     fn test_parser_split_digits() {
         let digits = Parser::split_digits(568764567);
         assert_eq!(digits, vec![5, 6, 8, 7, 6, 4, 5, 6, 7]);
+    }
+
+    #[test]
+    fn test_parser_transform_char() {
+        let tests = vec![('a', "a"), ('9', " "), ('\'', ""), ('F', "F")];
+
+        for test in tests {
+            let result = Parser::transform_char(test.0);
+            assert_eq!(result, test.1);
+        }
     }
 }
