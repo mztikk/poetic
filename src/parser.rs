@@ -28,14 +28,16 @@ pub struct Parser {}
 
 impl Parser {
     fn split_digits(d: usize) -> Vec<u8> {
-        let mut digits = VecDeque::new();
+        let mut digits = Vec::new();
         let mut n = d;
         while n > 0 {
-            digits.push_front((n % 10) as u8);
+            digits.push((n % 10) as u8);
             n /= 10;
         }
 
-        digits.into()
+        digits.reverse();
+
+        digits
     }
 
     pub fn parse_intermediate(source: &str) -> Vec<u8> {
