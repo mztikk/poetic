@@ -1,5 +1,5 @@
 use crate::instruction::Instruction;
-use std::{cmp::Ordering, collections::VecDeque, fmt::Display};
+use std::{cmp::Ordering, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParseError {
