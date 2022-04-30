@@ -1,3 +1,5 @@
+use split_digits::SplitDigitIterator;
+
 use crate::instruction::Instruction;
 use std::{cmp::Ordering, fmt::Display};
 
@@ -32,15 +34,8 @@ pub struct Parser {}
 
 impl Parser {
     fn split_digits(d: usize) -> Vec<u8> {
-        let mut digits = Vec::new();
-        let mut n = d;
-        while n > 0 {
-            digits.push((n % 10) as u8);
-            n /= 10;
-        }
-
+        let mut digits: Vec<u8> = SplitDigitIterator::new(d).rev().collect();
         digits.reverse();
-
         digits
     }
 
