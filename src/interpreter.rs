@@ -28,6 +28,7 @@ pub trait Memory {
     fn dec_memory_value(&mut self, value: u8);
 
     fn get_memory_size(&self) -> usize;
+    fn raw_memory(&self) -> Vec<u8>;
 }
 
 struct DynamicMemory {
@@ -86,6 +87,10 @@ impl Memory for DynamicMemory {
     fn get_memory_size(&self) -> usize {
         self.memory.len()
     }
+
+    fn raw_memory(&self) -> Vec<u8> {
+        self.memory.clone()
+    }
 }
 
 struct FixedMemory {
@@ -143,6 +148,10 @@ impl Memory for FixedMemory {
 
     fn get_memory_size(&self) -> usize {
         self.memory.len()
+    }
+
+    fn raw_memory(&self) -> Vec<u8> {
+        self.memory.clone()
     }
 }
 
