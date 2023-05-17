@@ -1,4 +1,5 @@
 use crate::instruction::Instruction;
+use rand::{Rng, RngCore};
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::Read,
@@ -166,6 +167,7 @@ pub struct Interpreter {
 
     jump_table: HashMap<usize, usize>,
     ended: bool,
+    rand: Box<dyn RngCore>,
 }
 
 pub fn default_input_stream() -> Option<u8> {
@@ -195,6 +197,7 @@ impl Interpreter {
             output: Box::new(default_output_stream),
             jump_table: HashMap::new(),
             ended: false,
+            rand: Box::new(rand::thread_rng()),
         }
     }
 
@@ -207,6 +210,7 @@ impl Interpreter {
             output: Box::new(default_output_stream),
             jump_table: HashMap::new(),
             ended: false,
+            rand: Box::new(rand::thread_rng()),
         }
     }
 
@@ -223,6 +227,7 @@ impl Interpreter {
             output,
             jump_table: HashMap::new(),
             ended: false,
+            rand: Box::new(rand::thread_rng()),
         }
     }
 
@@ -240,6 +245,7 @@ impl Interpreter {
             output,
             jump_table: HashMap::new(),
             ended: false,
+            rand: Box::new(rand::thread_rng()),
         }
     }
 
@@ -265,6 +271,11 @@ impl Interpreter {
     ) -> Self {
         self.input = input;
         self.output = output;
+        self
+    }
+
+    pub fn with_rng(mut self, rng: Box<dyn RngCore>) -> Self {
+        self.rand = rng;
         self
     }
 
@@ -298,7 +309,7 @@ impl Interpreter {
     }
 
     fn interpret_rnd(&mut self) {
-        self.memory.set_memory_value(rand::random::<u8>());
+        self.memory.set_memory_value(self.rand.gen::<u8>());
         self.instruction_pointer += 1;
     }
 
@@ -459,6 +470,51 @@ mod test {
     fn test_interpret_dec_wrapping() {
         let instructions = vec![Instruction::DEC(1)];
         let mut interpreter = super::Interpreter::new(instructions);
+        interpreter.run();
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 255);
+    }
+
+    #[test]
+    fn test_interpret_inc_fixed() {
+        for i in 1..10 {
+            let instructions = vec![Instruction::INC(i)];
+            let mut interpreter = super::Interpreter::new(instructions).with_fixed_size_memory(10);
+            assert_eq!(interpreter.memory.get_memory_size(), 10);
+            interpreter.step();
+            interpreter.memory.set_memory_pointer(0);
+            assert_eq!(interpreter.memory.get_memory_value(), i);
+        }
+    }
+
+    #[test]
+    fn test_interpret_inc_wrapping_fixed() {
+        let instructions = vec![Instruction::INC(255), Instruction::INC(1)];
+        let mut interpreter = super::Interpreter::new(instructions).with_fixed_size_memory(10);
+        assert_eq!(interpreter.memory.get_memory_size(), 10);
+        interpreter.run();
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+    }
+
+    #[test]
+    fn test_interpret_dec_fixed() {
+        for i in 1..10 {
+            // inc and dec same amount has to be 0
+            let instructions = vec![Instruction::INC(i), Instruction::DEC(i)];
+            let mut interpreter = super::Interpreter::new(instructions).with_fixed_size_memory(10);
+            assert_eq!(interpreter.memory.get_memory_size(), 10);
+            interpreter.run();
+            interpreter.memory.set_memory_pointer(0);
+            assert_eq!(interpreter.memory.get_memory_value(), 0);
+        }
+    }
+
+    #[test]
+    fn test_interpret_dec_wrapping_fixed() {
+        let instructions = vec![Instruction::DEC(1)];
+        let mut interpreter = super::Interpreter::new(instructions).with_fixed_size_memory(10);
+        assert_eq!(interpreter.memory.get_memory_size(), 10);
         interpreter.run();
         interpreter.memory.set_memory_pointer(0);
         assert_eq!(interpreter.memory.get_memory_value(), 255);
@@ -704,5 +760,93 @@ mod test {
         assert_eq!(interpreter.memory.get_memory_value(), 5);
 
         assert!(interpreter.ended);
+    }
+
+    #[test]
+    fn jump_if_zero_should_set_instruction_pointer_on_zero() {
+        let instructions = vec![Instruction::JIZ(5)];
+
+        let mut interpreter = super::Interpreter::new(instructions);
+
+        // nothing run yet
+        assert_eq!(interpreter.instruction_pointer, 0);
+
+        interpreter.run();
+        // should be 5
+        assert_eq!(interpreter.instruction_pointer, 5);
+    }
+
+    #[test]
+    fn jump_if_zero_should_not_set_instruction_pointer_on_non_zero_value() {
+        let instructions = vec![Instruction::INC(1), Instruction::JIZ(5)];
+
+        let mut interpreter = super::Interpreter::new(instructions);
+
+        // nothing run yet
+        assert_eq!(interpreter.instruction_pointer, 0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.step();
+        // ip should be 1
+        assert_eq!(interpreter.instruction_pointer, 1);
+        // and memory at 1
+        assert_eq!(interpreter.memory.get_memory_value(), 1);
+
+        interpreter.step();
+
+        // ip should be 2
+        assert_eq!(interpreter.instruction_pointer, 2);
+    }
+
+    #[test]
+    fn jump_not_zero_should_not_set_instruction_pointer_on_non_zero_value() {
+        let instructions = vec![Instruction::JNZ(5)];
+
+        let mut interpreter = super::Interpreter::new(instructions);
+
+        // nothing run yet
+        assert_eq!(interpreter.instruction_pointer, 0);
+
+        interpreter.run();
+        // should be 1
+        assert_eq!(interpreter.instruction_pointer, 1);
+    }
+
+    #[test]
+    fn jump_not_zero_should_set_instruction_pointer_on_zero_value() {
+        let instructions = vec![Instruction::INC(1), Instruction::JNZ(5)];
+
+        let mut interpreter = super::Interpreter::new(instructions);
+
+        // nothing run yet
+        assert_eq!(interpreter.instruction_pointer, 0);
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.step();
+        // ip should be 1
+        assert_eq!(interpreter.instruction_pointer, 1);
+        // and memory at 1
+        assert_eq!(interpreter.memory.get_memory_value(), 1);
+
+        interpreter.step();
+
+        // ip should be 5
+        assert_eq!(interpreter.instruction_pointer, 5);
+    }
+
+    #[test]
+    fn rnd_should_set_value() {
+        let random_value: u8 = 36;
+        let rng = rand::rngs::mock::StepRng::new(random_value as u64, 0);
+        let instructions = vec![Instruction::RND];
+
+        let mut interpreter = super::Interpreter::new(instructions).with_rng(Box::new(rng));
+
+        // nothing run yet
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.step();
+
+        assert_eq!(interpreter.memory.get_memory_value(), random_value);
     }
 }
