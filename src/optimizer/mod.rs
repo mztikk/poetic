@@ -1,12 +1,13 @@
-mod fwd_bak_merger;
-mod if_eif_jmp_rewriter;
-mod inc_dec_merger;
-
 use self::{
     fwd_bak_merger::FwdBakMerger, if_eif_jmp_rewriter::IfEifJmpRewriter,
     inc_dec_merger::IncDecMerger,
 };
 use crate::instruction::Instruction;
+
+mod fwd_bak_merger;
+mod if_eif_jmp_rewriter;
+mod inc_dec_merger;
+mod jnz_remover;
 
 pub trait Optimize {
     #[must_use]
@@ -56,7 +57,7 @@ mod test {
             Instruction::FWD(2),
             Instruction::BAK(1),
         ];
-        let optimizer = super::Optimizer;
+        let optimizer = super::Optimizer::default();
         let optimized_instructions = optimizer.optimize(&instructions);
         assert_eq!(
             optimized_instructions,
@@ -67,14 +68,14 @@ mod test {
     #[test]
     fn test_inc_dec_fwd_bak_merged_if_eif() {
         let instructions = vec![Instruction::IF, Instruction::INC(2), Instruction::EIF];
-        let optimizer = super::Optimizer;
+        let optimizer = super::Optimizer::default();
         let optimized_instructions = optimizer.optimize(&instructions);
         assert_eq!(
             optimized_instructions,
             vec![
                 Instruction::JIZ(2),
                 Instruction::INC(2),
-                Instruction::JNZ(0)
+                Instruction::JNZ(0),
             ]
         );
     }
