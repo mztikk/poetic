@@ -664,6 +664,37 @@ mod test {
     }
 
     #[test]
+    fn test_interpret_in_fixed() {
+        let mut input = vec![b'A', b'B', b'C'];
+        let get_input = move || -> Option<u8> {
+            if input.is_empty() {
+                None
+            } else {
+                Some(input.remove(0))
+            }
+        };
+
+        let instructions = vec![
+            Instruction::IN,
+            Instruction::FWD(1),
+            Instruction::IN,
+            Instruction::FWD(1),
+            Instruction::IN,
+        ];
+        let mut interpreter = super::Interpreter::new(instructions)
+            .with_input(Box::new(get_input))
+            .with_fixed_size_memory(200);
+        interpreter.run();
+
+        interpreter.memory.set_memory_pointer(0);
+        assert_eq!(interpreter.memory.get_memory_value(), b'A');
+        interpreter.memory.set_memory_pointer(1);
+        assert_eq!(interpreter.memory.get_memory_value(), b'B');
+        interpreter.memory.set_memory_pointer(2);
+        assert_eq!(interpreter.memory.get_memory_value(), b'C');
+    }
+
+    #[test]
     fn test_not_ended() {
         let instructions = vec![Instruction::INC(1)];
         let interpreter = super::Interpreter::new(instructions);
@@ -840,6 +871,24 @@ mod test {
         let instructions = vec![Instruction::RND];
 
         let mut interpreter = super::Interpreter::new(instructions).with_rng(Box::new(rng));
+
+        // nothing run yet
+        assert_eq!(interpreter.memory.get_memory_value(), 0);
+
+        interpreter.step();
+
+        assert_eq!(interpreter.memory.get_memory_value(), random_value);
+    }
+
+    #[test]
+    fn rnd_should_set_value_with_fixed_memory() {
+        let random_value: u8 = 36;
+        let rng = rand::rngs::mock::StepRng::new(random_value as u64, 0);
+        let instructions = vec![Instruction::RND];
+
+        let mut interpreter = super::Interpreter::new(instructions)
+            .with_rng(Box::new(rng))
+            .with_fixed_size_memory(200);
 
         // nothing run yet
         assert_eq!(interpreter.memory.get_memory_value(), 0);
