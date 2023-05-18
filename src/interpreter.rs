@@ -432,7 +432,7 @@ impl Interpreter {
 mod test {
     use std::{cell::RefCell, sync::Arc};
 
-    use crate::instruction::Instruction;
+    use crate::instruction::{self, Instruction};
 
     #[test]
     fn test_interpret_inc() {
@@ -848,5 +848,18 @@ mod test {
         interpreter.step();
 
         assert_eq!(interpreter.memory.get_memory_value(), random_value);
+    }
+
+    #[test]
+    fn jmp_should_set_instruction_pointer() {
+        let instructions = vec![Instruction::JMP(9)];
+
+        let mut interpreter = super::Interpreter::new(instructions);
+        // nothing run yet
+        assert_eq!(interpreter.instruction_pointer, 0);
+
+        interpreter.step();
+        // ip should be 1
+        assert_eq!(interpreter.instruction_pointer, 9);
     }
 }
