@@ -214,35 +214,35 @@ impl Interpreter {
         }
     }
 
-    pub fn new_io(
+    pub fn new_io<I: FnMut() -> Option<u8> + 'static, O: FnMut(String) + 'static>(
         instructions: Vec<Instruction>,
-        input: Box<dyn FnMut() -> Option<u8>>,
-        output: Box<dyn FnMut(String)>,
+        input: I,
+        output: O,
     ) -> Self {
         Self {
             instructions,
             instruction_pointer: 0,
             memory: Box::new(DynamicMemory::new()),
-            input,
-            output,
+            input: Box::new(input),
+            output: Box::new(output),
             jump_table: HashMap::new(),
             ended: false,
             rand: Box::new(rand::thread_rng()),
         }
     }
 
-    pub fn new_fixed_size_io(
+    pub fn new_fixed_size_io<I: FnMut() -> Option<u8> + 'static, O: FnMut(String) + 'static>(
         instructions: Vec<Instruction>,
         size: usize,
-        input: Box<dyn FnMut() -> Option<u8>>,
-        output: Box<dyn FnMut(String)>,
+        input: I,
+        output: O,
     ) -> Self {
         Self {
             instructions,
             instruction_pointer: 0,
             memory: Box::new(FixedMemory::new(size)),
-            input,
-            output,
+            input: Box::new(input),
+            output: Box::new(output),
             jump_table: HashMap::new(),
             ended: false,
             rand: Box::new(rand::thread_rng()),
@@ -254,23 +254,23 @@ impl Interpreter {
         self
     }
 
-    pub fn with_input(mut self, input: Box<dyn FnMut() -> Option<u8>>) -> Self {
-        self.input = input;
+    pub fn with_input<I: FnMut() -> Option<u8> + 'static>(mut self, input: I) -> Self {
+        self.input = Box::new(input);
         self
     }
 
-    pub fn with_output(mut self, output: Box<dyn FnMut(String)>) -> Self {
-        self.output = output;
+    pub fn with_output<O: FnMut(String) + 'static>(mut self, output: O) -> Self {
+        self.output = Box::new(output);
         self
     }
 
-    pub fn with_io(
+    pub fn with_io<I: FnMut() -> Option<u8> + 'static, O: FnMut(String) + 'static>(
         mut self,
-        input: Box<dyn FnMut() -> Option<u8>>,
-        output: Box<dyn FnMut(String)>,
+        input: I,
+        output: O,
     ) -> Self {
-        self.input = input;
-        self.output = output;
+        self.input = Box::new(input);
+        self.output = Box::new(output);
         self
     }
 
@@ -626,7 +626,7 @@ mod test {
         let output = Arc::new(RefCell::new(String::new()));
         let output_clone = output.clone();
         let mut interpreter =
-            super::Interpreter::new(instructions).with_output(Box::new(move |s| {
+            super::Interpreter::new(instructions).with_output(Box::new(move |s: String| {
                 output_clone.borrow_mut().push_str(s.as_str());
             }));
         interpreter.run();
