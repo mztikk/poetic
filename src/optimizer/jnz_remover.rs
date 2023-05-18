@@ -1,3 +1,5 @@
+use std::ops::Not;
+
 use crate::instruction::Instruction;
 
 use super::Optimize;
@@ -6,38 +8,29 @@ pub(crate) struct JnzRemover;
 
 impl JnzRemover {
     fn no_memory_altering_instructions(&self, instructions: &[Instruction]) -> bool {
-        for instruction in instructions {
-            match instruction {
-                Instruction::INC(_) => return false,
-                Instruction::DEC(_) => return false,
-                Instruction::IN => return false,
-                Instruction::RND => return false,
-                _ => continue,
-            }
-        }
-
-        true
+        instructions
+            .iter()
+            .any(|x| {
+                matches!(
+                    x,
+                    Instruction::INC(_) | Instruction::DEC(_) | Instruction::IN | Instruction::RND
+                )
+            })
+            .not()
     }
 }
 
 impl Optimize for JnzRemover {
     fn optimize(&self, instructions: &[Instruction]) -> Vec<Instruction> {
-        let mut result = Vec::new();
-
-        if self.no_memory_altering_instructions(instructions) {
-            for &instruction in instructions {
-                match instruction {
-                    Instruction::JNZ(_) => continue,
-                    _ => result.push(instruction),
-                }
-            }
-        } else {
-            for instruction in instructions {
-                result.push(instruction.clone());
-            }
+        if !self.no_memory_altering_instructions(instructions) {
+            return instructions.to_vec();
         }
 
-        result
+        instructions
+            .into_iter()
+            .filter(|x| !matches!(x, Instruction::JNZ(_)))
+            .cloned()
+            .collect()
     }
 }
 
