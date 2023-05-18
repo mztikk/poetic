@@ -274,8 +274,8 @@ impl Interpreter {
         self
     }
 
-    pub fn with_rng(mut self, rng: Box<dyn RngCore>) -> Self {
-        self.rand = rng;
+    pub fn with_rng<T: RngCore + 'static>(mut self, rng: T) -> Self {
+        self.rand = Box::new(rng);
         self
     }
 
@@ -887,7 +887,7 @@ mod test {
         let instructions = vec![Instruction::RND];
 
         let mut interpreter = super::Interpreter::new(instructions)
-            .with_rng(Box::new(rng))
+            .with_rng(rng)
             .with_fixed_size_memory(200);
 
         // nothing run yet
