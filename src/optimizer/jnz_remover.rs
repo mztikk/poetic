@@ -28,7 +28,7 @@ impl Optimize for JnzRemover {
 
         instructions
             .into_iter()
-            .filter(|x| !matches!(x, Instruction::JNZ(_)))
+            .filter(|x| matches!(x, Instruction::JNZ(_)).not())
             .cloned()
             .collect()
     }
