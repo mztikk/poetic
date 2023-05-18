@@ -194,6 +194,11 @@ impl Parser {
 
         Parser::check_if_eif_mismatch(&result).map_or(Ok(result), Err)
     }
+
+    pub fn parse(source: &str) -> Result<Vec<Instruction>, ParseError> {
+        let intermediate = Self::parse_intermediate(source);
+        Self::parse_instructions(&intermediate)
+    }
 }
 
 #[cfg(test)]
