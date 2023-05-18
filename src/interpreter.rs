@@ -870,7 +870,7 @@ mod test {
         let rng = rand::rngs::mock::StepRng::new(random_value as u64, 0);
         let instructions = vec![Instruction::RND];
 
-        let mut interpreter = super::Interpreter::new(instructions).with_rng(Box::new(rng));
+        let mut interpreter = super::Interpreter::new(instructions).with_rng(rng);
 
         // nothing run yet
         assert_eq!(interpreter.memory.get_memory_value(), 0);
