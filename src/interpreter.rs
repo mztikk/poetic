@@ -430,9 +430,8 @@ impl Interpreter {
 
 #[cfg(test)]
 mod test {
+    use crate::instruction::Instruction;
     use std::{cell::RefCell, sync::Arc};
-
-    use crate::instruction::{self, Instruction};
 
     #[test]
     fn test_interpret_inc() {
