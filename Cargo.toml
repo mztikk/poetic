@@ -1,6 +1,6 @@
 [package]
 name = "poetic"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["Nils Feierabend <mztikk@outlook.de>"]
 repository = "https://github.com/mztikk/poetic"
@@ -11,7 +11,7 @@ description = "library to parse and interpret poetic source code"
 
 [dependencies]
 rand = "0.8.5"
-getrandom = { version = "0.2.6", features = ["js"], optional = true }
+getrandom = { version = "0.2.9", features = ["js"], optional = true }
 split-digits = "0.2.1"
 
 [features]
