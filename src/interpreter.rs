@@ -1,5 +1,5 @@
 use crate::instruction::Instruction;
-use rand::{Rng, RngCore};
+use rand::{rngs::ThreadRng, Rng, RngCore};
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::Read,
@@ -32,7 +32,7 @@ pub trait Memory {
     fn raw_memory(&self) -> &[u8];
 }
 
-struct DynamicMemory {
+pub struct DynamicMemory {
     memory: Vec<u8>,
     memory_pointer: usize,
 }
@@ -94,7 +94,7 @@ impl Memory for DynamicMemory {
     }
 }
 
-struct FixedMemory<const SIZE: usize> {
+pub struct FixedMemory<const SIZE: usize> {
     memory: [u8; SIZE],
     memory_pointer: usize,
 }
@@ -156,18 +156,24 @@ impl<const SIZE: usize> Memory for FixedMemory<SIZE> {
     }
 }
 
-pub struct Interpreter {
+pub struct Interpreter<I, O, M, R>
+where
+    I: FnMut() -> Option<u8>,
+    O: FnMut(String),
+    M: Memory,
+    R: RngCore,
+{
     pub instructions: Vec<Instruction>,
     pub instruction_pointer: usize,
 
-    pub memory: Box<dyn Memory>,
+    pub memory: M,
 
-    pub input: Box<dyn FnMut() -> Option<u8>>,
-    pub output: Box<dyn FnMut(String)>,
+    pub input: I,
+    pub output: O,
 
     jump_table: HashMap<usize, usize>,
     ended: bool,
-    rand: Box<dyn RngCore>,
+    rand: R,
 }
 
 pub fn default_input_stream() -> Option<u8> {
@@ -187,99 +193,116 @@ pub fn default_output_stream(output: String) {
     print!("{}", output);
 }
 
-impl Interpreter {
+impl Interpreter<fn() -> Option<u8>, fn(String), DynamicMemory, ThreadRng> {
     pub fn new(instructions: Vec<Instruction>) -> Self {
         Self {
             instructions,
             instruction_pointer: 0,
-            memory: Box::new(DynamicMemory::new()),
-            input: Box::new(default_input_stream),
-            output: Box::new(default_output_stream),
+            memory: DynamicMemory::new(),
+            input: default_input_stream,
+            output: default_output_stream,
             jump_table: HashMap::new(),
             ended: false,
-            rand: Box::new(rand::thread_rng()),
+            rand: rand::thread_rng(),
         }
     }
+}
 
-    pub fn new_fixed_size<const SIZE: usize>(instructions: Vec<Instruction>) -> Self {
+impl<I, O> Interpreter<I, O, DynamicMemory, ThreadRng>
+where
+    I: FnMut() -> Option<u8>,
+    O: FnMut(String),
+{
+    pub fn new_io(instructions: Vec<Instruction>, input: I, output: O) -> Self {
         Self {
             instructions,
             instruction_pointer: 0,
-            memory: Box::new(FixedMemory::<SIZE>::new()),
-            input: Box::new(default_input_stream),
-            output: Box::new(default_output_stream),
+            memory: DynamicMemory::new(),
+            input,
+            output,
             jump_table: HashMap::new(),
             ended: false,
-            rand: Box::new(rand::thread_rng()),
+            rand: rand::thread_rng(),
+        }
+    }
+}
+
+impl<I, O, M, R> Interpreter<I, O, M, R>
+where
+    I: FnMut() -> Option<u8>,
+    O: FnMut(String),
+    M: Memory,
+    R: RngCore,
+{
+    pub fn with_fixed_size_memory<const SIZE: usize>(
+        self,
+    ) -> Interpreter<I, O, FixedMemory<SIZE>, R> {
+        Interpreter::<I, O, FixedMemory<SIZE>, R> {
+            instructions: self.instructions,
+            instruction_pointer: self.instruction_pointer,
+            memory: FixedMemory::<SIZE>::new(),
+            input: self.input,
+            output: self.output,
+            jump_table: self.jump_table,
+            ended: self.ended,
+            rand: self.rand,
         }
     }
 
-    pub fn new_io<I: FnMut() -> Option<u8> + 'static, O: FnMut(String) + 'static>(
-        instructions: Vec<Instruction>,
-        input: I,
-        output: O,
-    ) -> Self {
-        Self {
-            instructions,
-            instruction_pointer: 0,
-            memory: Box::new(DynamicMemory::new()),
-            input: Box::new(input),
-            output: Box::new(output),
-            jump_table: HashMap::new(),
-            ended: false,
-            rand: Box::new(rand::thread_rng()),
+    pub fn with_input<IN: FnMut() -> Option<u8>>(self, input: IN) -> Interpreter<IN, O, M, R> {
+        Interpreter::<IN, O, M, R> {
+            instructions: self.instructions,
+            instruction_pointer: self.instruction_pointer,
+            memory: self.memory,
+            input,
+            output: self.output,
+            jump_table: self.jump_table,
+            ended: self.ended,
+            rand: self.rand,
         }
     }
 
-    pub fn new_fixed_size_io<
-        const SIZE: usize,
-        I: FnMut() -> Option<u8> + 'static,
-        O: FnMut(String) + 'static,
-    >(
-        instructions: Vec<Instruction>,
-        input: I,
-        output: O,
-    ) -> Self {
-        Self {
-            instructions,
-            instruction_pointer: 0,
-            memory: Box::new(FixedMemory::<SIZE>::new()),
-            input: Box::new(input),
-            output: Box::new(output),
-            jump_table: HashMap::new(),
-            ended: false,
-            rand: Box::new(rand::thread_rng()),
+    pub fn with_output<ON: FnMut(String)>(self, output: ON) -> Interpreter<I, ON, M, R> {
+        Interpreter::<I, ON, M, R> {
+            instructions: self.instructions,
+            instruction_pointer: self.instruction_pointer,
+            memory: self.memory,
+            input: self.input,
+            output,
+            jump_table: self.jump_table,
+            ended: self.ended,
+            rand: self.rand,
         }
     }
 
-    pub fn with_fixed_size_memory<const SIZE: usize>(mut self) -> Self {
-        self.memory = Box::new(FixedMemory::<SIZE>::new());
-        self
+    pub fn with_io<IN: FnMut() -> Option<u8>, ON: FnMut(String)>(
+        self,
+        input: IN,
+        output: ON,
+    ) -> Interpreter<IN, ON, M, R> {
+        Interpreter::<IN, ON, M, R> {
+            instructions: self.instructions,
+            instruction_pointer: self.instruction_pointer,
+            memory: self.memory,
+            input,
+            output,
+            jump_table: self.jump_table,
+            ended: self.ended,
+            rand: self.rand,
+        }
     }
 
-    pub fn with_input<I: FnMut() -> Option<u8> + 'static>(mut self, input: I) -> Self {
-        self.input = Box::new(input);
-        self
-    }
-
-    pub fn with_output<O: FnMut(String) + 'static>(mut self, output: O) -> Self {
-        self.output = Box::new(output);
-        self
-    }
-
-    pub fn with_io<I: FnMut() -> Option<u8> + 'static, O: FnMut(String) + 'static>(
-        mut self,
-        input: I,
-        output: O,
-    ) -> Self {
-        self.input = Box::new(input);
-        self.output = Box::new(output);
-        self
-    }
-
-    pub fn with_rng<T: RngCore + 'static>(mut self, rng: T) -> Self {
-        self.rand = Box::new(rng);
-        self
+    pub fn with_rng<RN: RngCore>(self, rand: RN) -> Interpreter<I, O, M, RN> {
+        Interpreter::<I, O, M, RN> {
+            instructions: self.instructions,
+            instruction_pointer: self.instruction_pointer,
+            memory: self.memory,
+            input: self.input,
+            output: self.output,
+            jump_table: self.jump_table,
+            ended: self.ended,
+            rand,
+        }
     }
 
     pub fn step(&mut self) {
@@ -433,7 +456,7 @@ impl Interpreter {
 
 #[cfg(test)]
 mod test {
-    use crate::instruction::Instruction;
+    use crate::{instruction::Instruction, interpreter::Memory};
     use std::{cell::RefCell, sync::Arc};
 
     #[test]

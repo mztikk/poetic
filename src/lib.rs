@@ -34,7 +34,8 @@ mod test {
         let instructions = instructions.unwrap();
         let output = std::sync::Arc::new(std::cell::RefCell::new(String::new()));
         let output_clone = output.clone();
-        let mut interpreter = crate::interpreter::Interpreter::new_fixed_size::<1>(instructions)
+        let mut interpreter = crate::interpreter::Interpreter::new(instructions)
+            .with_fixed_size_memory::<1>()
             .with_output(Box::new(move |s: String| {
                 output_clone.borrow_mut().push_str(s.as_str());
             }));
@@ -54,7 +55,8 @@ mod test {
         let instructions = instructions.unwrap();
         let output = std::sync::Arc::new(std::cell::RefCell::new(String::new()));
         let output_clone = output.clone();
-        let mut interpreter = crate::interpreter::Interpreter::new_fixed_size::<100>(instructions)
+        let mut interpreter = crate::interpreter::Interpreter::new(instructions)
+            .with_fixed_size_memory::<100>()
             .with_output(Box::new(move |s: String| {
                 output_clone.borrow_mut().push_str(s.as_str());
             }));
