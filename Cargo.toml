@@ -11,14 +11,13 @@ description = "library to parse and interpret poetic source code"
 
 [dependencies]
 rand = "0.8.5"
-getrandom = { version = "0.2.9", features = ["js"], optional = true }
-split-digits = "0.2.1"
+getrandom = { version = "0.2.15", features = ["js"], optional = true }
 
 [features]
 wasm = ["dep:getrandom"]
 
 [dev-dependencies]
-criterion = "0.3.5"
+criterion = "0.5.1"
 
 [[bench]]
 name = "benchmarks"

@@ -1,5 +1,3 @@
-use split_digits::SplitDigitIterator;
-
 use crate::instruction::Instruction;
 use std::{cmp::Ordering, fmt::Display};
 
@@ -41,10 +39,22 @@ impl Display for ParseError {
 pub struct Parser {}
 
 impl Parser {
-    fn split_digits(d: usize) -> Vec<u8> {
-        let mut digits: Vec<u8> = SplitDigitIterator::new(d).rev().collect();
-        digits.reverse();
-        digits
+    fn split_digits(mut num: usize) -> impl Iterator<Item = usize> {
+        let mut divisor = 1;
+        while num >= divisor * 10 {
+            divisor *= 10;
+        }
+
+        std::iter::from_fn(move || {
+            if divisor == 0 {
+                None
+            } else {
+                let v = num / divisor;
+                num %= divisor;
+                divisor /= 10;
+                Some(v)
+            }
+        })
     }
 
     /// Any character that is not an alphabetic character or apostrophe is ignored, and treated as whitespace
@@ -68,7 +78,11 @@ impl Parser {
             .for_each(|d| match d.cmp(&10) {
                 Ordering::Less => result.push(d as u8),
                 Ordering::Equal => result.push(0),
-                Ordering::Greater => result.append(&mut Parser::split_digits(d)),
+                Ordering::Greater => result.append(
+                    &mut Parser::split_digits(d)
+                        .map(|x| x as u8)
+                        .collect::<Vec<u8>>(),
+                ),
             });
 
         result
@@ -412,7 +426,7 @@ mod test {
 
     #[test]
     fn test_parser_split_digits() {
-        let digits = Parser::split_digits(568764567);
+        let digits = Parser::split_digits(568764567).collect::<Vec<usize>>();
         assert_eq!(digits, vec![5, 6, 8, 7, 6, 4, 5, 6, 7]);
     }
 
