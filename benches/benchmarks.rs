@@ -1,4 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use split_digits::SplitDigitIterator;
 use std::collections::VecDeque;
 
 fn split_digits_vec_deque(d: usize) -> Vec<u8> {
@@ -36,26 +37,8 @@ fn split_digits_vec_push_reverse(d: usize) -> Vec<u8> {
     digits
 }
 
-fn split_digits(mut num: usize) -> impl Iterator<Item = usize> {
-    let mut divisor = 1;
-    while num >= divisor * 10 {
-        divisor *= 10;
-    }
-
-    std::iter::from_fn(move || {
-        if divisor == 0 {
-            None
-        } else {
-            let v = num / divisor;
-            num %= divisor;
-            divisor /= 10;
-            Some(v)
-        }
-    })
-}
-
 fn split_digits_iterator(d: usize) -> Vec<u8> {
-    split_digits(d).map(|x| x as u8).collect::<Vec<u8>>()
+    SplitDigitIterator::new(d).collect()
 }
 
 fn benchmark_split_digits(c: &mut Criterion) {
