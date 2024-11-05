@@ -71,14 +71,14 @@ impl Parser {
         result
     }
 
-    fn argument_conversion(argument: u8) -> u8 {
+    const fn argument_conversion(argument: u8) -> u8 {
         match argument {
             0 => 10,
             v => v,
         }
     }
 
-    fn check_if_eif_mismatch(instructions: &[Instruction]) -> Option<ParseError> {
+    const fn check_if_eif_mismatch(instructions: &[Instruction]) -> Option<ParseError> {
         // check for matching if/eif
         let mut i = 0;
         while i < instructions.len() {
@@ -137,7 +137,7 @@ impl Parser {
         None
     }
 
-    fn get_instruction_name(instruction: &u8) -> Option<&'static str> {
+    const fn get_instruction_name(instruction: &u8) -> Option<&'static str> {
         match instruction {
             0 => Some("END"),
             1 => Some("IF"),
@@ -431,7 +431,14 @@ mod test {
 
     #[test]
     fn test_nested_if_eif_match() {
-        let instructions = vec![Instruction::IF, Instruction::RND, Instruction::IF, Instruction::RND, Instruction::EIF, Instruction::EIF];
+        let instructions = vec![
+            Instruction::IF,
+            Instruction::RND,
+            Instruction::IF,
+            Instruction::RND,
+            Instruction::EIF,
+            Instruction::EIF,
+        ];
         let result = Parser::check_if_eif_mismatch(&instructions);
         assert!(result.is_none());
     }
@@ -449,7 +456,14 @@ mod test {
         let result = Parser::check_if_eif_mismatch(&instructions);
         assert!(result.is_some());
 
-        let instructions = vec![Instruction::IF, Instruction::IF, Instruction::IF, Instruction::EIF, Instruction::RND, Instruction::EIF];
+        let instructions = vec![
+            Instruction::IF,
+            Instruction::IF,
+            Instruction::IF,
+            Instruction::EIF,
+            Instruction::RND,
+            Instruction::EIF,
+        ];
         let result = Parser::check_if_eif_mismatch(&instructions);
         assert!(result.is_some());
     }

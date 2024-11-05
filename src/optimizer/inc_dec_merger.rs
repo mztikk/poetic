@@ -37,7 +37,7 @@ fn create_inc_dec_instructions_from_total(total: i64) -> Vec<Instruction> {
     instructions
 }
 
-fn get_total_count_inc_dec(instructions: &[Instruction], start: usize) -> (i64, usize) {
+const fn get_total_count_inc_dec(instructions: &[Instruction], start: usize) -> (i64, usize) {
     let mut total: i64 = 0;
     let mut j = start;
     while j < instructions.len() {
