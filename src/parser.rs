@@ -72,11 +72,10 @@ impl Parser {
     }
 
     fn argument_conversion(argument: u8) -> u8 {
-        if argument == 0 {
-            return 10;
+        match argument {
+            0 => 10,
+            v => v,
         }
-
-        argument
     }
 
     fn check_if_eif_mismatch(instructions: &[Instruction]) -> Option<ParseError> {
