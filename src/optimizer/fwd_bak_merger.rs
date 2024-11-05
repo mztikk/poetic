@@ -112,6 +112,26 @@ mod test {
     }
 
     #[test]
+    fn test_multiple_fwd_merged() {
+        let mut instructions = vec![
+            Instruction::FWD(1),
+            Instruction::FWD(2),
+            Instruction::FWD(3),
+            Instruction::RND,
+            Instruction::FWD(1),
+            Instruction::FWD(2),
+            Instruction::FWD(3),
+        ];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::FWD(6), Instruction::RND, Instruction::FWD(6)]
+        );
+    }
+
+    #[test]
     fn test_bak_merged() {
         let mut instructions = vec![
             Instruction::BAK(1),
@@ -122,6 +142,26 @@ mod test {
         let optimizer = super::FwdBakMerger;
         instructions = optimizer.optimize(&instructions);
         assert_eq!(instructions, vec![Instruction::BAK(6)]);
+    }
+
+    #[test]
+    fn test_multiple_bak_merged() {
+        let mut instructions = vec![
+            Instruction::BAK(1),
+            Instruction::BAK(2),
+            Instruction::BAK(3),
+            Instruction::RND,
+            Instruction::BAK(1),
+            Instruction::BAK(2),
+            Instruction::BAK(3),
+        ];
+
+        let optimizer = super::FwdBakMerger;
+        instructions = optimizer.optimize(&instructions);
+        assert_eq!(
+            instructions,
+            vec![Instruction::BAK(6), Instruction::RND, Instruction::BAK(6)]
+        );
     }
 
     #[test]
