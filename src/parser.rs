@@ -421,4 +421,36 @@ mod test {
             assert_eq!(result, test.1);
         }
     }
+
+    #[test]
+    fn test_if_eif_match() {
+        let instructions = vec![Instruction::IF, Instruction::EIF];
+        let result = Parser::check_if_eif_mismatch(&instructions);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_nested_if_eif_match() {
+        let instructions = vec![Instruction::IF, Instruction::RND, Instruction::IF, Instruction::RND, Instruction::EIF, Instruction::EIF];
+        let result = Parser::check_if_eif_mismatch(&instructions);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_if_eif_mismatch() {
+        let instructions = vec![Instruction::IF, Instruction::RND];
+        let result = Parser::check_if_eif_mismatch(&instructions);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_nested_if_eif_mismatch() {
+        let instructions = vec![Instruction::IF, Instruction::IF, Instruction::RND];
+        let result = Parser::check_if_eif_mismatch(&instructions);
+        assert!(result.is_some());
+
+        let instructions = vec![Instruction::IF, Instruction::IF, Instruction::IF, Instruction::EIF, Instruction::RND, Instruction::EIF];
+        let result = Parser::check_if_eif_mismatch(&instructions);
+        assert!(result.is_some());
+    }
 }
